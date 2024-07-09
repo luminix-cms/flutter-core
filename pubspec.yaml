@@ -1,0 +1,19 @@
+name: luminix_flutter_core
+description: Pacote de utilitários de integração Luminix com Flutter
+version: 1.0.0
+
+environment:
+  sdk: ^3.4.1
+
+# Add regular dependencies here.
+dependencies:
+  path: ^1.8.3
+  args: ^2.2.0
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0
+
+executables:
+  # Gerador de classes através de um arquivo JSON
+  generate_class: bin/flutter_json_generator.dart
