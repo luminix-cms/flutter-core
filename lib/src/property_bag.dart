@@ -1,22 +1,23 @@
 import 'package:luminix_flutter_core/src/utils.dart';
+import 'types/json_encodable.dart';
 
-class PropertyBag {
+class PropertyBag<T extends JsonEncodable> {
   Map<String, dynamic> _properties;
 
   final List<String> lockedKeys = [];
 
   PropertyBag({
-    Map<String, dynamic>? initialProperties,
-  }) : _properties = initialProperties ?? {};
+    required T bag,
+  }) : _properties = bag.toJson();
 
   ///
   /// get the value of the specified [field]
   ///
   Object? operator [](String field) => getMapFieldValue(_properties, field);
 
-  T? get<T>(String field, T? defaultValue) {
+  V? get<V>(String field, V? defaultValue) {
     final value = getMapFieldValue(_properties, field);
-    return value == null ? defaultValue : value as T;
+    return value == null ? defaultValue : value as V;
   }
 
   void set(String field, dynamic value) {
