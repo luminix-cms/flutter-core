@@ -9,7 +9,7 @@ class AppConfiguration implements JsonEncodable {
   });
 
   final String? environment;
-  final String? debug;
+  final bool? debug;
   final String? url;
   final String? bootUrl;
 

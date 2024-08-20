@@ -6,5 +6,8 @@ dynamic config(
   required String field,
   dynamic defaultValue,
 }) {
-  return LuminixApp.of(context).configuration.get<dynamic>(field, defaultValue);
+  return LuminixApp.of(context)
+      .facades
+      .config
+      ?.get<dynamic>(field, defaultValue);
 }

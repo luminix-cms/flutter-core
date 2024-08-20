@@ -6,16 +6,22 @@ class PropertyBag<T extends JsonEncodable> {
 
   final List<String> lockedKeys = [];
 
-  PropertyBag({
-    required T bag,
-  }) : _properties = bag.toJson();
+  PropertyBag._internal({
+    required Map<String, dynamic> properties,
+  }) : _properties = properties;
+
+  factory PropertyBag({required T bag}) =>
+      PropertyBag._internal(properties: bag.toJson());
+
+  factory PropertyBag.fromMap({required Map<String, dynamic> map}) =>
+      PropertyBag._internal(properties: map);
 
   ///
   /// get the value of the specified [field]
   ///
   Object? operator [](String field) => getMapFieldValue(_properties, field);
 
-  V? get<V>(String field, V? defaultValue) {
+  V? get<V>(String field, [V? defaultValue]) {
     final value = getMapFieldValue(_properties, field);
     return value == null ? defaultValue : value as V;
   }
@@ -39,6 +45,34 @@ class PropertyBag<T extends JsonEncodable> {
     }
 
     setMapFieldValue(_properties, field, value);
+  }
+
+  merge(String path, Map<String, dynamic> value) {
+    if (path == '.') {
+      if (lockedKeys.any((item) => getMapFieldValue(value, item) != null)) {
+        throw Exception(
+            'Cannot merge a path "$path" that would override a locked path');
+      }
+      _properties = {
+        ..._properties,
+        ...value,
+      };
+      return;
+    }
+    final currentValue = get(path);
+
+    if (currentValue is Map) {
+      return this.set(path, {
+        ...currentValue,
+        ...value,
+      });
+    }
+
+    if (currentValue == null) {
+      return this.set(path, value);
+    }
+
+    throw Exception('Cannot merge a non-object path "$path"');
   }
 
   bool has(String field) => getMapFieldValue(_properties, field) != null;
