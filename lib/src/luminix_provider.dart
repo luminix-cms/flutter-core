@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
-import 'package:luminix_flutter_core/src/model.dart';
-import 'package:luminix_flutter_core/src/property_bag.dart';
-import 'package:luminix_flutter_core/src/route.dart';
+import 'package:luminix_flutter/src/model.dart';
+import 'package:luminix_flutter/src/property_bag.dart';
+import 'package:luminix_flutter/src/route.dart';
 
 import 'types/app_configuration.dart';
 

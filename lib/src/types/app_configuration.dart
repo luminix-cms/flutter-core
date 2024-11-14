@@ -1,4 +1,4 @@
-import 'package:luminix_flutter_core/src/types/json_encodable.dart';
+import 'package:luminix_flutter/src/types/json_encodable.dart';
 
 class AppConfiguration implements JsonEncodable {
   AppConfiguration({

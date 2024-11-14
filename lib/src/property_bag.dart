@@ -1,4 +1,4 @@
-import 'package:luminix_flutter_core/src/utils.dart';
+import 'package:luminix_flutter/src/utils.dart';
 import 'types/json_encodable.dart';
 
 class PropertyBag<T extends JsonEncodable> {

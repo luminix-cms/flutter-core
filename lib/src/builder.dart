@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:luminix_flutter_core/src/route.dart';
-import 'package:luminix_flutter_core/src/types/route_generator.dart';
+import 'package:luminix_flutter/src/route.dart';
+import 'package:luminix_flutter/src/types/route_generator.dart';
 
 import 'property_bag.dart';
 import 'extensions/string.dart';

@@ -1,7 +1,5 @@
-import 'package:luminix_flutter_core/luminix_flutter_core.dart';
-import 'package:luminix_flutter_core/src/reducible.dart';
-
-import 'base_model.dart';
+import 'package:luminix_flutter/luminix_flutter.dart';
+import 'package:luminix_flutter/src/reducible.dart';
 
 class ModelFacade with Reducible {
   final Map<String, dynamic> _schema;

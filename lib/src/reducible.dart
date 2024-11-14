@@ -1,4 +1,4 @@
-import 'package:luminix_flutter_core/src/types/reducer.dart';
+import 'package:luminix_flutter/src/types/reducer.dart';
 import 'package:dartx/dartx.dart';
 
 mixin Reducible {

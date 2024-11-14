@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:luminix_flutter_core/luminix_flutter_core.dart';
+import 'package:luminix_flutter/luminix_flutter.dart';
 
 dynamic config(
   BuildContext context, {

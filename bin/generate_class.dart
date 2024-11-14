@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
-import 'package:luminix_flutter_core/src/generator.dart';
+import 'package:luminix_flutter/src/generator.dart';
 
 // Função principal que cria um parser de argumentos e executa a geração de classes
 void main(List<String> arguments) {
