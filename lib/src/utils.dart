@@ -1,7 +1,7 @@
 /// Backtick char code.
 final backtickChrCode = '`'.codeUnitAt(0);
 
-void setPartsMapValue(Map map, Iterable<String> parts, Object value) {
+void setPartsMapValue(Map map, Iterable<String> parts, Object? value) {
   final last = parts.length - 1;
   for (var i = 0; i < last; i++) {
     final part = parts.elementAt(i);
@@ -65,6 +65,19 @@ T? getMapFieldValue<T>(Map map, String field) {
 
 /// Set field value.
 ///
-void setMapFieldValue(Map map, String field, Object value) {
+void setMapFieldValue(Map map, String field, Object? value) {
   setPartsMapValue(map, getFieldParts(field), value);
+}
+
+Map<String, dynamic> mergeMaps(
+    Map<String, dynamic> map1, Map<String, dynamic> map2) {
+  final result = Map<String, dynamic>.from(map1);
+  map2.forEach((key, value) {
+    if (result.containsKey(key) && result[key] is Map && value is Map) {
+      result[key] = mergeMaps(result[key], value as dynamic);
+    } else {
+      result[key] = value;
+    }
+  });
+  return result;
 }

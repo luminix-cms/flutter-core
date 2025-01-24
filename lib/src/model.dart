@@ -7,7 +7,7 @@ class ModelFacade with Reducible {
 
   ModelFacade(Map<String, dynamic> schema) : _schema = schema;
 
-  boot(LuminixApp app) {
+  boot(Application app) {
     // for (var modelName in _schema.keys) {
     //   _models[modelName] = ModelFactory(app.make(), modelName, SpecificModel);
     // }

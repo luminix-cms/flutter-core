@@ -12,6 +12,20 @@ extension StringtoCamelCaseExtension on String {
   }
 }
 
+extension StringtoSnakeCaseExtension on String {
+  String snakeCase() {
+    if (isEmpty) return '';
+
+    final words =
+        replaceAll(RegExp(r'[^\w\s]+'), '') // Remove caracteres especiais
+            .split(' ')
+            .where((word) => word.isNotEmpty) // Remove palavras vazias
+            .map((word) => word.toLowerCase());
+
+    return words.join('_');
+  }
+}
+
 extension StringCapitalizeExtension on String {
   String capitalize() {
     switch (length) {

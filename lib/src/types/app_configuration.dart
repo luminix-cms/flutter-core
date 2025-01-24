@@ -1,25 +1,27 @@
 import 'package:luminix_flutter/src/types/json_encodable.dart';
 
 class AppConfiguration implements JsonEncodable {
-  AppConfiguration({
+  const AppConfiguration({
     this.environment,
     this.debug,
     this.url,
-    this.bootUrl,
+    this.manifest,
   });
 
   final String? environment;
   final bool? debug;
   final String? url;
-  final String? bootUrl;
+  final Map<String, dynamic>? manifest;
 
   @override
   Map<String, dynamic> toJson() {
     return {
-      'environment': environment,
-      'debug': debug,
-      'url': url,
-      'bootUrl': bootUrl,
-    };
+      'manifest': manifest,
+      'app': {
+        'env': environment,
+        'debug': debug,
+        'url': url,
+      }..removeWhere((key, value) => value == null)
+    }..removeWhere((key, value) => value == null);
   }
 }

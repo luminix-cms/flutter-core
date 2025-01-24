@@ -27,9 +27,9 @@ mixin Reducible {
     super.noSuchMethod(invocation); // Will throw.
   }
 
-  reducer({
+  reducer<T>({
     required String name,
-    required ReducerCallback callback,
+    required ReducerCallback<T> callback,
     int priority = 10,
   }) {
     // TODO: Check if the reducers name is not a method name
@@ -39,13 +39,13 @@ mixin Reducible {
     }
 
     reducers[name]!.add(
-      Reducer(callback, priority),
+      Reducer<T>(callback, priority),
     );
 
     return () => removeReducer(name, callback);
   }
 
-  removeReducer(String name, ReducerCallback callback) {
+  removeReducer<T>(String name, ReducerCallback<T> callback) {
     final index =
         reducers[name]?.indexWhere((reducer) => reducer.callback == callback);
     if (index == -1 || index == null) {

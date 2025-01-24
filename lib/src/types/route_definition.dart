@@ -10,4 +10,7 @@ class RouteDefinition {
       methods: json.skip(1).toList(),
     );
   }
+
+  @override
+  String toString() => 'RouteDefinition(name: $name, methods: $methods)';
 }

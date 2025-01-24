@@ -36,7 +36,7 @@ class PropertyBag<T extends JsonEncodable> {
         throw Exception('Cannot set the root path when there are locked paths');
       }
 
-      if (value! is Map<String, dynamic> || value == null) {
+      if (value is! Map<String, dynamic>) {
         throw Exception('Value must be an object');
       }
 

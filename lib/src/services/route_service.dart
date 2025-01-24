@@ -1,43 +1,33 @@
 import 'package:dartx/dartx.dart';
-import 'package:dio/dio.dart';
+import 'package:luminix_flutter/luminix_flutter.dart';
+import 'package:luminix_flutter/src/http/response.dart';
 
-import 'reducible.dart';
-import 'types/route_definition.dart';
-import 'types/route_generator.dart';
+import '../http/client.dart';
+import '../http/utils/is_validation_error.dart';
+import '../utils.dart';
+import '../reducible.dart';
+import '../types/route_definition.dart';
 
-class RouteCallConfig extends Options {
-  final Map<String, dynamic>? data;
+typedef ClientContructor = Client Function();
 
-  RouteCallConfig({
-    this.data,
-    super.method,
-    super.sendTimeout,
-    super.receiveTimeout,
-    super.extra,
-    super.headers,
-    super.preserveHeaderCase,
-    super.responseType,
-    super.contentType,
-    super.validateStatus,
-    super.receiveDataWhenStatusError,
-    super.followRedirects,
-    super.maxRedirects,
-    super.persistentConnection,
-    super.requestEncoder,
-    super.responseDecoder,
-    super.listFormat,
-  });
-}
-
-class RouteFacade with Reducible {
+class RouteService with Reducible {
   final Map<String, dynamic> routes;
+  final _client = Client();
   final String appUrl;
 
-  RouteFacade(this.routes, [this.appUrl = '']);
+  final ApiAuthDriver Function() _authProvider;
+
+  RouteService(
+      {required this.routes,
+      this.appUrl = '',
+      required ApiAuthDriver Function() authProvider})
+      : _authProvider = authProvider;
+
+  ApiAuthDriver get auth => _authProvider();
 
   // forwards to the `replaceRouteParams` reducer
-  dynamic _replaceRouteParams(dynamic value) {
-    (this as dynamic).replaceRouteParams(value);
+  String _replaceRouteParams(String value) {
+    return (this as dynamic).replaceRouteParams(value);
   }
 
   bool _isRouteDefinition(dynamic route) {
@@ -68,9 +58,9 @@ class RouteFacade with Reducible {
       throw Exception('Route $name does not exist.');
     }
 
-    final route = routes.getOrElse(name, () => null);
+    final route = getMapFieldValue(routes, name);
 
-    return RouteDefinition.fromList(route);
+    return RouteDefinition.fromList(route.cast<String>());
   }
 
   String url(RouteGenerator generator) {
@@ -116,29 +106,40 @@ class RouteFacade with Reducible {
   }
 
   bool exists(String name) {
-    return routes.any((key, _) => key == name) &&
-        _isRouteDefinition(routes.getOrElse(name, () => null));
+    // TODO: create extension method 'has' for Map
+    return getMapFieldValue(routes, name) != null &&
+        _isRouteDefinition(getMapFieldValue(routes, name));
   }
 
   // Improve this method later
   Future<Response> call({
     required RouteGenerator generator,
-    required RouteCallConfig config,
+    Client Function(Client)? tap,
   }) async {
+    final methods = get(generator.name).methods;
     final url = this.url(generator);
 
-    final dioOptions = (this as dynamic).dioOptions(config, generator.name);
+    var client = tap?.call(_client) ?? _client;
 
-    try {
-      final dio = Dio();
+    // TODO: implement call to reducer `clientOptions`
 
-      final response =
-          await dio.request(url, options: dioOptions, data: config.data);
+    final method = methods.first;
 
-      return response;
-    } on DioException catch (error) {
-      print(error);
-      rethrow;
+    if (auth.isAuthenticated) {
+      client = client.withHeaders({
+        'Authorization': 'Bearer ${auth.accessToken}',
+      });
     }
+
+    final response = await client.call(method, url);
+
+    if (isValidationError(response)) {
+      final errors = response.json()['errors'] as Map<String, List<String>>;
+      throw Exception(errors.values.join(', '));
+    } else if (response.failed()) {
+      throw Exception(response.json()['message']);
+    }
+
+    return response;
   }
 }
