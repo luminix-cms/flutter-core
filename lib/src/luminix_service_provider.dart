@@ -32,7 +32,7 @@ class LuminixServiceProvider extends ServiceProvider {
 
     app.singleton('route', () {
       return RouteService(
-        routes: app.configuration['manifest']['routes'] ?? {},
+        routes: app.configuration['manifest']?['routes'] ?? {},
         appUrl: app.configuration['app']?['url'] ?? '',
         authProvider: () => app.make('auth'),
       );
