@@ -483,7 +483,9 @@ abstract class BaseModel {
 
     if (attributeTypes[key] != null) {
       return switch (attributeTypes[key]) {
-        'DateTime' => DateTime.parse(_attributes[key] as String),
+        'DateTime' => _attributes[key] != null
+            ? DateTime.parse(_attributes[key] as String)
+            : null,
         'int' => _attributes[key],
         'bool' => _attributes[key] == true || _attributes[key] == 1,
         _ => _attributes[key],
