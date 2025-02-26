@@ -22,7 +22,7 @@ class Relation<T extends BaseModel> {
     }
 
     if (this.isSingle()) {
-      if (data is Map<String, dynamic>) {
+      if (data is! Map<String, dynamic>) {
         throw Exception('Relation.make() expects an object');
       }
       this.set(modelBuilder(data));

@@ -16,7 +16,7 @@ class Response {
     return _response.body;
   }
 
-  Map<String, dynamic> json() {
+  dynamic json() {
     return jsonDecode(_response.body);
   }
 
