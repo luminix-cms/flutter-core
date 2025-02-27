@@ -23,7 +23,7 @@ class Request<T> implements Future<Response> {
         request.headers.addAll(headers!);
       }
 
-      if (data != null) {
+      if (data != null && method != 'GET') {
         request.body = data;
       }
 
