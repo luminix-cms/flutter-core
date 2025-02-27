@@ -126,9 +126,9 @@ class Builder<T extends BaseModel> {
       return this;
     }
 
-    final String suffix = filterOperator.name.capitalize();
+    final String suffix = filterOperator.name;
 
-    bag.set('where.${key.camelCase()}$suffix', value);
+    bag.set('where.$key$suffix', value);
 
     return this;
   }
