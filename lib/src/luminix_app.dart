@@ -11,11 +11,13 @@ class LuminixApp extends StatefulWidget {
   final AppConfiguration configuration;
   final List<ServiceProviderConstructor> providers;
   final Widget child;
+  final VoidCallback? onInit;
 
   LuminixApp({
     super.key,
     this.configuration = const AppConfiguration(),
     this.providers = const [],
+    this.onInit,
     required this.child,
   });
 
@@ -35,9 +37,12 @@ class _LuminixAppState extends State<LuminixApp> {
       ..withProviders([LuminixServiceProvider.new, ...widget.providers])
       ..withConfiguration(widget.configuration);
 
-    app.create().then((_) => Future.delayed(Duration(seconds: 3), () {
-          setState(() => initialized = true);
-        }));
+    app.create().then((_) {
+      setState(() => initialized = true);
+      if (widget.onInit != null) {
+        widget.onInit!();
+      }
+    });
   }
 
   @override
