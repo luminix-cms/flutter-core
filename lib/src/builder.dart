@@ -128,7 +128,7 @@ class Builder<T extends BaseModel> {
 
     final String suffix = filterOperator.name;
 
-    bag.set('where.$key$suffix', value);
+    bag.set('where.$key:$suffix', value);
 
     return this;
   }
