@@ -28,6 +28,10 @@ class ApiAuthDriver extends AuthDriver {
 
   BaseModel? _user;
 
+  Map<String, dynamic> _methodsMap() => {
+        'isReady': isReady,
+      };
+
   Future<void> _initialize() async {
     try {
       await _load();
@@ -99,5 +103,18 @@ class ApiAuthDriver extends AuthDriver {
     if (map != null) {
       authResponse = AuthResponse.fromJson(map);
     }
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) {
+    final method = invocation.memberName
+        .toString()
+        .replaceAll('Symbol("', '')
+        .replaceAll('")', '');
+    if (_methodsMap().containsKey(method)) {
+      return _methodsMap()[method];
+    }
+
+    return super.noSuchMethod(invocation);
   }
 }
