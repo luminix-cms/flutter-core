@@ -63,7 +63,7 @@ class Application {
   }
 
   void withConfiguration(AppConfiguration configuration) {
-    _configuration = mergeMaps(_configuration, configuration.toJson());
+    _configuration = mergeMaps(_configuration, configuration.toMap());
   }
 
   void withProviders(List<ServiceProviderConstructor> providers) {

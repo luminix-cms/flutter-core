@@ -44,11 +44,15 @@ class LuminixServiceProvider extends ServiceProvider {
       );
     });
 
-    app.singleton('auth', () {
+    app.singleton('auth:api', () {
       return ApiAuthDriver(
         app.make('config'),
         () => app.make('route'),
       );
+    });
+
+    app.singleton('auth', () {
+      return AuthService(app);
     });
 
     getIt.registerSingleton<RouteService>(app.make('route'));

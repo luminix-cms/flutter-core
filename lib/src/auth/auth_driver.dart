@@ -1,7 +1,10 @@
-abstract class AuthDriver {
-  bool get isAuthenticated;
-  Map<String, dynamic>? get user;
+import 'package:luminix_flutter/src/base_model.dart';
 
-  Future<void> attemptLogin(String email, String password);
+abstract class AuthDriver {
+  Future<void> attempt(Map<String, dynamic> credentials,
+      [bool remember = false]);
+  bool check();
   Future<void> logout();
+  BaseModel? user();
+  dynamic id();
 }

@@ -125,7 +125,7 @@ class RouteService with Reducible {
 
     final method = methods.first;
 
-    if (auth.isAuthenticated) {
+    if (auth.check()) {
       client = client.withHeaders({
         'Authorization': 'Bearer ${auth.accessToken}',
       });

@@ -11,7 +11,7 @@ class PropertyBag<T extends JsonEncodable> {
   }) : _properties = properties;
 
   factory PropertyBag({required T bag}) =>
-      PropertyBag._internal(properties: bag.toJson());
+      PropertyBag._internal(properties: bag.toMap());
 
   factory PropertyBag.fromMap({required Map<String, dynamic> map}) =>
       PropertyBag._internal(properties: map);
