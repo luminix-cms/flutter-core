@@ -30,6 +30,7 @@ class ApiAuthDriver extends AuthDriver {
 
   Map<String, dynamic> _methodsMap() => {
         'isReady': isReady,
+        'accessToken': accessToken,
       };
 
   Future<void> _initialize() async {

@@ -15,15 +15,15 @@ class RouteService with Reducible {
   final _client = Client();
   final String appUrl;
 
-  final ApiAuthDriver Function() _authProvider;
+  final AuthService Function() _authProvider;
 
   RouteService(
       {required this.routes,
       this.appUrl = '',
-      required ApiAuthDriver Function() authProvider})
+      required AuthService Function() authProvider})
       : _authProvider = authProvider;
 
-  ApiAuthDriver get auth => _authProvider();
+  AuthService get auth => _authProvider();
 
   // forwards to the `replaceRouteParams` reducer
   String _replaceRouteParams(String value) {
@@ -127,7 +127,7 @@ class RouteService with Reducible {
 
     if (auth.check()) {
       client = client.withHeaders({
-        'Authorization': 'Bearer ${auth.accessToken}',
+        'Authorization': 'Bearer ${(auth as dynamic).accessToken}',
       });
     }
 
