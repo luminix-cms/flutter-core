@@ -238,8 +238,8 @@ class Builder<T extends BaseModel> {
   }
 
   Future<ModelPaginatedResponse<T>> all() async {
-    final limit = config.get('luminix.backend.api.max_per_page', 150)!;
-    final firstPage = await this.limit(limit)._exec(1);
+    // final limit = config.get('luminix.backend.api.max_per_page', 150)!;
+    // final firstPage = await this.limit(limit)._exec(1);
     // TODO: Implement pagination to be returned from the `_exec` method
 
     throw UnimplementedError();
