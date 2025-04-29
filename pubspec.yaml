@@ -1,6 +1,7 @@
 name: luminix_flutter
 description: Pacote de utilitários de integração Luminix com Flutter
 homepage: https://github.com/AranduTech
+publish_to: https://pub-registry.arandutech.com.br
 version: 0.1.0
 
 environment:
