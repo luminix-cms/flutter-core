@@ -476,11 +476,6 @@ abstract class BaseModel {
   dynamic getAttribute(String key) {
     _attributes[key];
 
-    if (attributeTypes[key] == 'bool') {
-      print('bool: ${_attributes[key].runtimeType}');
-      return false;
-    }
-
     if (attributeTypes[key] != null) {
       return switch (attributeTypes[key]) {
         'DateTime' => _attributes[key] != null

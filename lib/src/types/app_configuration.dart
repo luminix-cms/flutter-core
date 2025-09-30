@@ -34,15 +34,21 @@ class AuthConfiguration {
   const AuthConfiguration({
     required this.userModel,
     this.driver,
+    this.loginRoute,
   });
 
   final String? driver;
   final BaseModelFactory userModel;
+  final String? loginRoute;
 
   toMap() {
     return {
       'driver': driver,
       'model': userModel,
+      if (loginRoute != null)
+        'routes': {
+          'login': loginRoute,
+        }
     };
   }
 }
