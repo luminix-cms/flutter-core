@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:dartx/dartx.dart';
 import 'package:http/http.dart' as http;
 import 'response.dart';
 
@@ -11,20 +13,39 @@ class Request<T> implements Future<Response> {
     String method = 'GET',
     Map<String, String>? headers,
     String? data,
-  }) : _future = _makeRequest(url, method, headers, data);
+    List<http.MultipartFile>? files,
+  }) : _future = _makeRequest(url, method, headers, data, files);
 
-  static Future<Response> _makeRequest(Uri url, String method,
-      Map<String, String>? headers, String? data) async {
+  static Future<Response> _makeRequest(
+      Uri url,
+      String method,
+      Map<String, String>? headers,
+      String? data,
+      List<http.MultipartFile>? files) async {
     try {
       final http.Client client = http.Client();
-      final request = http.Request(method, url);
+      final request = files == null
+          ? http.Request(method, url)
+          : http.MultipartRequest(method, url);
 
       if (headers is Map) {
         request.headers.addAll(headers!);
       }
 
       if (data != null && method.toUpperCase() != 'GET') {
-        request.body = data;
+        if (files != null && files.isNotEmpty) {
+          final multipartRequest = request as http.MultipartRequest;
+          multipartRequest.fields.addAll(Map<String, String>.from(
+              data.isNotEmpty
+                  ? Map<String, dynamic>.from(jsonDecode(data))
+                      .mapValues((entry) => entry.value.toString())
+                  : {}));
+          for (final file in files) {
+            multipartRequest.files.add(file);
+          }
+        } else {
+          (request as http.Request).body = data;
+        }
       }
 
       final streamedResponse = await client.send(request);

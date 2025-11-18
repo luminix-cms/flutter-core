@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:qs_dart/qs_dart.dart';
+import 'package:http/http.dart' show MultipartFile;
 
 import 'request.dart';
 
@@ -11,6 +12,7 @@ class Client {
   final Map<String, String> headers;
   final Map<String, dynamic>? params;
   final Map<String, dynamic>? data;
+  final List<MultipartFile>? files;
 
   Client({
     this.baseUrl,
@@ -20,6 +22,7 @@ class Client {
     },
     this.params,
     this.data,
+    this.files,
   });
 
   Client asForm() {
@@ -114,17 +117,18 @@ class Client {
       headers: headers,
       method: method,
       data: jsonEncode(data),
+      files: files,
     );
   }
 
   Uri buildUrl(String path) {
-    if (baseUrl == null) {
-      return Uri.parse(path).replace(
-        query: QS.encode(
-            params, const EncodeOptions(encodeValuesOnly: true, encode: false)),
-      );
-    }
-    return Uri.parse(baseUrl!).replace(path: path, queryParameters: params);
+    print(QS.encode(
+        params, const EncodeOptions(encodeValuesOnly: true, encode: true)));
+
+    return Uri.parse(path).replace(
+      query: QS.encode(
+          params, const EncodeOptions(encodeValuesOnly: true, encode: true)),
+    );
   }
 
   Client copyWith({
@@ -132,12 +136,14 @@ class Client {
     Map<String, String>? headers,
     Map<String, dynamic>? params,
     Map<String, dynamic>? data,
+    List<MultipartFile>? files,
   }) {
     return Client(
       baseUrl: baseUrl ?? this.baseUrl,
       headers: headers ?? this.headers,
       params: params ?? this.params,
       data: data ?? this.data,
+      files: files ?? this.files,
     );
   }
 }
