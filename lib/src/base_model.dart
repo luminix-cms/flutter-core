@@ -1,3 +1,4 @@
+import 'package:dartx/dartx.dart';
 import 'package:get_it/get_it.dart';
 import 'package:luminix_flutter/luminix_flutter.dart';
 import 'package:luminix_flutter/src/extensions/string.dart';
@@ -343,19 +344,17 @@ abstract class BaseModel {
     _makeAttributes(response.json());
   }
 
-  Future<Response?> save([
+  Future<Response?> save({
     ModelSaveOptions options = const ModelSaveOptions(),
     Client Function(Client)? tap,
-  ]) async {
+  }) async {
     try {
       final existedBeforeSaving = exists;
 
-      final attributes = options.sendsOnlyModifiedFields && existedBeforeSaving
-          ? diff()
-          : this.attributes;
-
-      final data = Map.fromEntries(
-          attributes.entries.where((entry) => fillable.contains(entry.key)));
+      final data = (options.sendsOnlyModifiedFields && existedBeforeSaving
+              ? diff()
+              : attributes)
+          .filterKeys((attr) => fillable.contains(attr));
 
       if (data.isEmpty) {
         return null;
@@ -477,6 +476,9 @@ abstract class BaseModel {
     _attributes[key];
 
     if (attributeTypes[key] != null) {
+      if (attributeTypes[key] == 'double' && _attributes[key] is String) {
+        return double.tryParse(_attributes[key] as String);
+      }
       return switch (attributeTypes[key]) {
         'DateTime' => _attributes[key] != null
             ? DateTime.parse(_attributes[key] as String)
@@ -493,13 +495,10 @@ abstract class BaseModel {
   void setAttribute(String key, dynamic value) {
     if (value != null) {
       if (attributeTypes[key] != null) {
-        switch (attributeTypes[key]) {
-          case 'DateTime':
-            value = value.toString();
-            break;
-          default:
-            value = value.toString();
-        }
+        value = switch (attributeTypes[key]) {
+          'DateTime' => value.toString(),
+          _ => value,
+        };
       }
     }
 
