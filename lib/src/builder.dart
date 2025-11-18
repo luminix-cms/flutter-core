@@ -1,3 +1,4 @@
+import 'package:luminix_flutter/src/http/client.dart';
 import 'package:luminix_flutter/src/services/route_service.dart';
 import 'package:luminix_flutter/src/types/route_generator.dart';
 
@@ -188,18 +189,23 @@ class Builder<T extends BaseModel> {
 
   // TODO: Return paginated response
   Future<ModelPaginatedResponse<T>> _exec(
-      [int page = 1, String? replaceLinksWith]) async {
+      [int page = 1,
+      String? replaceLinksWith,
+      Map<String, dynamic>? additionalParams]) async {
     try {
       bag.set('page', page);
 
       final response = await route.call(
         generator: RouteGenerator(name: 'luminix.$schemaKey.index'),
-        tap: (c) => c.withParams(bag.all()),
+        tap: (c) => c.withParams({
+          ...bag.all(),
+          ...?additionalParams,
+        }),
       );
 
-      final models = (response.json()['data'] as List<dynamic>)
-          .map((item) => modelBuilder(item))
-          .toList();
+      final models = (response.json()['data'] as List<dynamic>).map((item) {
+        return modelBuilder(item)..exists = true;
+      }).toList();
 
       return ModelPaginatedResponse<T>.fromJson(models, response.json());
     } catch (error) {
@@ -209,8 +215,10 @@ class Builder<T extends BaseModel> {
   }
 
   Future<ModelPaginatedResponse<T>> get(
-      [int page = 1, String? replaceLinksWith]) async {
-    return _exec(page, replaceLinksWith);
+      {int page = 1,
+      String? replaceLinksWith,
+      Map<String, dynamic>? additionalParams}) async {
+    return _exec(page, replaceLinksWith, additionalParams);
   }
 
   Future<T?> first() async {

@@ -21,7 +21,7 @@ class HasMany extends HasOneOrMany {
 
   Future<ModelPaginatedResponse<BaseModel>> get(
       [int page = 1, String? replaceLinksWith]) {
-    return query().get(page, replaceLinksWith);
+    return query().get(page: page, replaceLinksWith: replaceLinksWith);
   }
 
   Future<ModelPaginatedResponse<BaseModel>> all() {
