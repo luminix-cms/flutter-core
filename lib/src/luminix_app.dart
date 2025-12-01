@@ -11,7 +11,7 @@ class LuminixApp extends StatefulWidget {
   final AppConfiguration configuration;
   final List<ServiceProviderConstructor> providers;
   final Widget child;
-  final VoidCallback? onInit;
+  final void Function(Application)? onInit;
 
   LuminixApp({
     super.key,
@@ -39,9 +39,7 @@ class _LuminixAppState extends State<LuminixApp> {
 
     app.create().then((_) {
       setState(() => initialized = true);
-      if (widget.onInit != null) {
-        widget.onInit!();
-      }
+      widget.onInit?.call(app);
     });
   }
 
