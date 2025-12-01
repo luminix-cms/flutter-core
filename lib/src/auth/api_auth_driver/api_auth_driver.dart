@@ -99,7 +99,9 @@ class ApiAuthDriver extends AuthDriver {
       final response = await _route.call(
         generator: RouteGenerator(name: routeName),
         tap: (client) => client.copyWith(
-          headers: {'Authorization': 'Bearer ${accessToken ?? ''}'},
+          headers: {
+            'Authorization': 'Bearer ${authResponse?.refreshToken ?? ''}',
+          },
         ),
       );
 
