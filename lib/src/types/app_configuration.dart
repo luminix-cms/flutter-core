@@ -21,11 +21,8 @@ class AppConfiguration implements JsonEncodable {
     return {
       'manifest': manifest,
       'auth': auth?.toMap(),
-      'app': {
-        'env': environment,
-        'debug': debug,
-        'url': url,
-      }..removeWhere((key, value) => value == null),
+      'app': {'env': environment, 'debug': debug, 'url': url}
+        ..removeWhere((key, value) => value == null),
     }..removeWhere((key, value) => value == null);
   }
 }
@@ -35,20 +32,23 @@ class AuthConfiguration {
     required this.userModel,
     this.driver,
     this.loginRoute,
+    this.refreshRoute,
   });
 
   final String? driver;
   final BaseModelFactory userModel;
   final String? loginRoute;
+  final String? refreshRoute;
 
   toMap() {
     return {
       'driver': driver,
       'model': userModel,
-      if (loginRoute != null)
+      if (loginRoute != null || refreshRoute != null)
         'routes': {
-          'login': loginRoute,
-        }
+          if (loginRoute != null) 'login': loginRoute,
+          if (refreshRoute != null) 'refresh': refreshRoute,
+        },
     };
   }
 }

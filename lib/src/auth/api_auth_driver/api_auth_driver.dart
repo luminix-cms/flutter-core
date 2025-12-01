@@ -29,9 +29,9 @@ class ApiAuthDriver extends AuthDriver {
   BaseModel? _user;
 
   Map<String, dynamic> _methodsMap() => {
-        'isReady': isReady,
-        'accessToken': accessToken,
-      };
+    'isReady': isReady,
+    'accessToken': accessToken,
+  };
 
   Future<void> _initialize() async {
     try {
@@ -71,17 +71,18 @@ class ApiAuthDriver extends AuthDriver {
   }
 
   @override
-  Future<void> attempt(Map<String, dynamic> credentials,
-      [bool remember = false]) async {
-    final route =
-        RouteGenerator(name: _config.get('auth.routes.login') ?? 'login');
+  Future<void> attempt(
+    Map<String, dynamic> credentials, [
+    bool remember = false,
+  ]) async {
+    final route = RouteGenerator(
+      name: _config.get('auth.routes.login') ?? 'login',
+    );
 
     final response = await _route.call(
       generator: route,
-      tap: (client) => client.copyWith(data: {
-        ...credentials,
-        'remember': remember,
-      }),
+      tap: (client) =>
+          client.copyWith(data: {...credentials, 'remember': remember}),
     );
 
     if (response.failed()) {
@@ -90,6 +91,27 @@ class ApiAuthDriver extends AuthDriver {
 
     authResponse = getAuthResponse(response.json());
     _saveFile.save(authResponse!.toJson());
+  }
+
+  @override
+  Future<String> refreshToken() async {
+    if (_config.get('auth.routes.refresh') case String routeName) {
+      final response = await _route.call(
+        generator: RouteGenerator(name: routeName),
+        tap: (client) => client.copyWith(
+          headers: {'Authorization': 'Bearer ${accessToken ?? ''}'},
+        ),
+      );
+
+      if (response.failed()) {
+        throw Exception(response.json()['message']);
+      }
+
+      authResponse = getAuthResponse(response.json());
+      _saveFile.save(authResponse!.toJson());
+    }
+
+    throw Exception('No route name provided');
   }
 
   @override

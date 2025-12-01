@@ -26,17 +26,16 @@ class Client {
   });
 
   Client asForm() {
-    return copyWith(headers: {
-      ...headers,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    });
+    return copyWith(
+      headers: {
+        ...headers,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
   }
 
   Client accept(String type) {
-    return copyWith(headers: {
-      ...headers,
-      'Accept': type,
-    });
+    return copyWith(headers: {...headers, 'Accept': type});
   }
 
   Client acceptJson() {
@@ -44,71 +43,42 @@ class Client {
   }
 
   Client withHeaders(Map<String, String> headers) {
-    return copyWith(headers: {
-      ...this.headers,
-      ...headers,
-    });
+    return copyWith(headers: {...this.headers, ...headers});
   }
 
   Client withParams(Map<String, dynamic> params) {
-    return copyWith(params: {
-      if (this.params is Map) ...this.params!,
-      ...params,
-    });
+    return copyWith(
+      params: {if (this.params is Map) ...this.params!, ...params},
+    );
   }
 
   Client withBasicAuth(String username, String password) {
     final auth = base64Encode(utf8.encode('$username:$password'));
-    return copyWith(headers: {
-      ...headers,
-      'Authorization': 'Basic $auth',
-    });
+    return copyWith(headers: {...headers, 'Authorization': 'Basic $auth'});
   }
 
   Client withBearerToken(String token) {
-    return copyWith(headers: {
-      ...headers,
-      'Authorization': 'Bearer $token',
-    });
+    return copyWith(headers: {...headers, 'Authorization': 'Bearer $token'});
   }
 
   Request<T> get<T>(String url) {
-    return Request<T>(
-      url: buildUrl(url),
-      headers: headers,
-    );
+    return Request<T>(url: buildUrl(url), headers: headers);
   }
 
   Request<T> post<T>(String url) {
-    return Request<T>(
-      url: buildUrl(url),
-      headers: headers,
-      method: 'POST',
-    );
+    return Request<T>(url: buildUrl(url), headers: headers, method: 'POST');
   }
 
   Request<T> put<T>(String url) {
-    return Request<T>(
-      url: buildUrl(url),
-      headers: headers,
-      method: 'PUT',
-    );
+    return Request<T>(url: buildUrl(url), headers: headers, method: 'PUT');
   }
 
   Request<T> patch<T>(String url) {
-    return Request<T>(
-      url: buildUrl(url),
-      headers: headers,
-      method: 'PATCH',
-    );
+    return Request<T>(url: buildUrl(url), headers: headers, method: 'PATCH');
   }
 
   Request<T> delete<T>(String url) {
-    return Request<T>(
-      url: buildUrl(url),
-      headers: headers,
-      method: 'DELETE',
-    );
+    return Request<T>(url: buildUrl(url), headers: headers, method: 'DELETE');
   }
 
   Request<T> call<T>(String method, String url) {
@@ -122,12 +92,11 @@ class Client {
   }
 
   Uri buildUrl(String path) {
-    print(QS.encode(
-        params, const EncodeOptions(encodeValuesOnly: true, encode: true)));
-
     return Uri.parse(path).replace(
       query: QS.encode(
-          params, const EncodeOptions(encodeValuesOnly: true, encode: true)),
+        params,
+        const EncodeOptions(encodeValuesOnly: true, encode: true),
+      ),
     );
   }
 

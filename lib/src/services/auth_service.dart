@@ -1,10 +1,19 @@
+import 'dart:async';
+
 import 'package:luminix_flutter/luminix_flutter.dart';
 import 'package:luminix_flutter/src/auth/auth_driver.dart';
+import 'package:luminix_flutter/src/http/request.dart' show Request;
 
 class AuthService {
   final Application app;
 
-  AuthService(this.app);
+  Completer<String>? _refreshCompleter;
+
+  AuthService(this.app) {
+    // Register a single-flight token refresh callback so multiple concurrent 401s
+    // only trigger a single refresh request.
+    Request.setTokenRefreshCallback(() async => _singleFlightRefresh());
+  }
 
   void registerDriver(String name, AuthDriver instance) {
     app.singleton('auth:$name', () => instance);
@@ -27,13 +36,38 @@ class AuthService {
     return _getDriver().check();
   }
 
-  Future<void> attempt(Map<String, dynamic> credentials,
-      [bool remember = false]) {
+  Future<void> attempt(
+    Map<String, dynamic> credentials, [
+    bool remember = false,
+  ]) {
     return _getDriver().attempt(credentials, remember);
   }
 
+  Future<String> refreshToken() {
+    return _getDriver().refreshToken();
+  }
+
   Future<void> logout() {
+    // Clear the global callback to avoid accidental refresh attempts after logout
+    Request.clearTokenRefreshCallback();
     return _getDriver().logout();
+  }
+
+  /// Ensures only one refresh call runs at a time. Returns the refreshed token.
+  Future<String> _singleFlightRefresh() {
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    _refreshCompleter = Completer<String>();
+
+    _getDriver()
+        .refreshToken()
+        .then((token) => _refreshCompleter!.complete(token))
+        .catchError((e, st) => _refreshCompleter!.completeError(e, st))
+        .whenComplete(() => _refreshCompleter = null);
+
+    return _refreshCompleter!.future;
   }
 
   @override

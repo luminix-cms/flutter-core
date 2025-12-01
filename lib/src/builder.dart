@@ -6,10 +6,7 @@ import 'base_model.dart';
 import 'property_bag.dart';
 import 'extensions/string.dart';
 
-enum SortDirection {
-  asc,
-  desc,
-}
+enum SortDirection { asc, desc }
 
 enum Filter {
   notEquals,
@@ -39,7 +36,9 @@ class ModelPaginatedResponse<T> {
   });
 
   factory ModelPaginatedResponse.fromJson(
-      List<T> items, Map<String, dynamic> map) {
+    List<T> items,
+    Map<String, dynamic> map,
+  ) {
     return ModelPaginatedResponse(
       data: items,
       currentPage: map['meta']['current_page'],
@@ -112,8 +111,11 @@ class Builder<T extends BaseModel> {
     return this;
   }
 
-  Builder<T> where(
-      {required String key, required dynamic value, Filter? filterOperator}) {
+  Builder<T> where({
+    required String key,
+    required dynamic value,
+    Filter? filterOperator,
+  }) {
     if (!bag.has('where')) {
       bag.set('where', {});
     }
@@ -159,8 +161,10 @@ class Builder<T extends BaseModel> {
   //       return this;
   //   }
 
-  Builder<T> orderBy(String column,
-      [SortDirection direction = SortDirection.asc]) {
+  Builder<T> orderBy(
+    String column, [
+    SortDirection direction = SortDirection.asc,
+  ]) {
     bag.set('order_by', '$column:${direction.name}');
     return this;
   }
@@ -188,19 +192,17 @@ class Builder<T extends BaseModel> {
   }
 
   // TODO: Return paginated response
-  Future<ModelPaginatedResponse<T>> _exec(
-      [int page = 1,
-      String? replaceLinksWith,
-      Map<String, dynamic>? additionalParams]) async {
+  Future<ModelPaginatedResponse<T>> _exec([
+    int page = 1,
+    String? replaceLinksWith,
+    Map<String, dynamic>? additionalParams,
+  ]) async {
     try {
       bag.set('page', page);
 
       final response = await route.call(
         generator: RouteGenerator(name: 'luminix.$schemaKey.index'),
-        tap: (c) => c.withParams({
-          ...bag.all(),
-          ...?additionalParams,
-        }),
+        tap: (c) => c.withParams({...bag.all(), ...?additionalParams}),
       );
 
       final models = (response.json()['data'] as List<dynamic>).map((item) {
@@ -214,10 +216,11 @@ class Builder<T extends BaseModel> {
     }
   }
 
-  Future<ModelPaginatedResponse<T>> get(
-      {int page = 1,
-      String? replaceLinksWith,
-      Map<String, dynamic>? additionalParams}) async {
+  Future<ModelPaginatedResponse<T>> get({
+    int page = 1,
+    String? replaceLinksWith,
+    Map<String, dynamic>? additionalParams,
+  }) async {
     return _exec(page, replaceLinksWith, additionalParams);
   }
 
@@ -235,8 +238,10 @@ class Builder<T extends BaseModel> {
       throw Exception('Primary key not defined for schema $schemaKey');
     }
 
-    final result =
-        await where(key: primaryKeyField, value: id).limit(1)._exec(1);
+    final result = await where(
+      key: primaryKeyField,
+      value: id,
+    ).limit(1)._exec(1);
 
     if (result.data.isEmpty) {
       return null;

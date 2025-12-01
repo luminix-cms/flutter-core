@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
 import 'package:luminix_flutter/luminix_flutter.dart';
 import 'package:luminix_flutter/src/utils.dart';
 
@@ -27,18 +24,6 @@ class Application {
 
   Map<String, ServiceLoader> get services => loaders;
   Map<String, dynamic> get configuration => _configuration;
-
-  Future<void> loadConfiguration() async {
-    // TODO: find ways to improve this
-    try {
-      final manifestString =
-          await rootBundle.loadString('lib/src/models/manifest.json');
-      final manifestJson = jsonDecode(manifestString);
-      withConfiguration(AppConfiguration(manifest: manifestJson));
-    } catch (e) {
-      print('An error ocurred while loading the manifest: $e');
-    }
-  }
 
   void bind(String abstract, Function concrete) {
     loaders[abstract] = ServiceLoader(concrete);
@@ -71,8 +56,6 @@ class Application {
   }
 
   Future<void> create() async {
-    await loadConfiguration();
-
     var providerInstances = providers.map((providerType) {
       return (providerType as dynamic Function(Application)).call(this)
           as ServiceProvider;

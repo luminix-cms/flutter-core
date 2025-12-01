@@ -5,7 +5,7 @@ publish_to: https://pub-registry.arandutech.com.br
 version: 0.1.0
 
 environment:
-  sdk: ^3.4.1
+  sdk: ^3.10.0
 
 # Add regular dependencies here.
 dependencies:

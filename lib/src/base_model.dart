@@ -1,4 +1,5 @@
 import 'package:dartx/dartx.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:luminix_flutter/luminix_flutter.dart';
 import 'package:luminix_flutter/src/extensions/string.dart';
@@ -9,12 +10,13 @@ GetIt getIt = GetIt.instance;
 
 typedef BaseModelFactory = BaseModel Function([Map<String, dynamic>?]);
 
-typedef RelationFactory = Relation Function({
-  required Map<String, dynamic> meta,
-  required BaseModel Function([Map<String, dynamic>?]) modelBuilder,
-  required BaseModel parent,
-  dynamic items,
-});
+typedef RelationFactory =
+    Relation Function({
+      required Map<String, dynamic> meta,
+      required BaseModel Function([Map<String, dynamic>?]) modelBuilder,
+      required BaseModel parent,
+      dynamic items,
+    });
 
 class ModelSaveOptions {
   final Map<String, dynamic> additionalPayload;
@@ -26,9 +28,9 @@ class ModelSaveOptions {
   });
 }
 
-abstract class BaseModel {
+abstract class BaseModel extends ChangeNotifier {
   late PropertyBag _attributes;
-  // Map<String, dynamic> _original = {};
+  Map<String, dynamic> _original = {};
   final Map<String, Relation> _relations = {};
 
   BaseModel([Map<String, dynamic>? attributes]) {
@@ -51,8 +53,27 @@ abstract class BaseModel {
   bool wasRecentlyCreated = false;
   final List<String> _changedKeys = [];
 
+  _updateChangedKeys(String key) {
+    // update nested keys accordingly
+    final keyToStore = (key.contains('.') || key.contains('['))
+        ? key.split(RegExp(r'[.\[]'))[0]
+        : key;
+
+    if (!_changedKeys.contains(keyToStore) &&
+        _original[keyToStore] == _attributes.get(keyToStore)) {
+      _changedKeys.add(keyToStore);
+    } else if (_changedKeys.contains(keyToStore) &&
+        _original[keyToStore] == _attributes.get(keyToStore)) {
+      _changedKeys.remove(keyToStore);
+    }
+  }
+
   Map<String, dynamic> get attributes {
     return _attributes.all();
+  }
+
+  Map<String, dynamic> get original {
+    return _original;
   }
 
   Map<String, Relation> get relations => _relations;
@@ -252,9 +273,7 @@ abstract class BaseModel {
   }
 
   Map<String, dynamic> _makePrimaryKeyReplacer() {
-    return {
-      primaryKey: getKey(),
-    };
+    return {primaryKey: getKey()};
   }
 
   void _makeAttributes(Map<String, dynamic> attributes) {
@@ -281,13 +300,20 @@ abstract class BaseModel {
     // TODO: validate attributes
 
     _attributes.set('.', newAttributes);
-    // _original = newAttributes;
+    _original = newAttributes;
     _changedKeys.clear();
   }
 
   Builder query();
 
   dynamic getKey() => getAttribute(primaryKey);
+
+  // diff(): JsonObject {
+  //     return this._changedKeys.reduce((acc, key) => {
+  //         acc[key] = this._attributes.get(key) as JsonValue;
+  //         return acc;
+  //     }, {} as JsonObject);
+  // }
 
   Map<String, dynamic> diff() {
     return _changedKeys.fold<Map<String, dynamic>>({}, (acc, key) {
@@ -300,7 +326,8 @@ abstract class BaseModel {
     return exists
         ? RouteGenerator(
             name: 'luminix.$schemaName.update',
-            replacer: _makePrimaryKeyReplacer())
+            replacer: _makePrimaryKeyReplacer(),
+          )
         : RouteGenerator(name: 'luminix.$schemaName.store');
   }
 
@@ -351,10 +378,11 @@ abstract class BaseModel {
     try {
       final existedBeforeSaving = exists;
 
-      final data = (options.sendsOnlyModifiedFields && existedBeforeSaving
-              ? diff()
-              : attributes)
-          .filterKeys((attr) => fillable.contains(attr));
+      final data =
+          (options.sendsOnlyModifiedFields && existedBeforeSaving
+                  ? diff()
+                  : attributes)
+              .filterKeys((attr) => fillable.contains(attr));
 
       if (data.isEmpty) {
         return null;
@@ -396,9 +424,7 @@ abstract class BaseModel {
 
   Future<Response> delete() async {
     try {
-      final response = await route.call(
-        generator: getRouteForDelete(),
-      );
+      final response = await route.call(generator: getRouteForDelete());
 
       if (response.noContent()) {
         return response;
@@ -411,8 +437,10 @@ abstract class BaseModel {
     }
   }
 
-  Future<void> update(Map<String, dynamic> data,
-      [Client Function(Client)? tap]) async {
+  Future<void> update(
+    Map<String, dynamic> data, [
+    Client Function(Client)? tap,
+  ]) async {
     try {
       final response = await route.call(
         generator: getRouteForUpdate(),
@@ -472,6 +500,10 @@ abstract class BaseModel {
     }
   }
 
+  get isDirty {
+    return _changedKeys.isNotEmpty;
+  }
+
   dynamic getAttribute(String key) {
     _attributes[key];
 
@@ -480,9 +512,10 @@ abstract class BaseModel {
         return double.tryParse(_attributes[key] as String);
       }
       return switch (attributeTypes[key]) {
-        'DateTime' => _attributes[key] != null
-            ? DateTime.parse(_attributes[key] as String)
-            : null,
+        'DateTime' =>
+          _attributes[key] != null
+              ? DateTime.parse(_attributes[key] as String)
+              : null,
         'int' => _attributes[key],
         'bool' => _attributes[key] == true || _attributes[key] == 1,
         _ => _attributes[key],
@@ -493,6 +526,9 @@ abstract class BaseModel {
   }
 
   void setAttribute(String key, dynamic value) {
+    final oldValue = _attributes.get(key);
+
+    // convert value according to attribute types before comparison
     if (value != null) {
       if (attributeTypes[key] != null) {
         value = switch (attributeTypes[key]) {
@@ -502,6 +538,15 @@ abstract class BaseModel {
       }
     }
 
+    // if unchanged, do nothing
+    if (oldValue == value) {
+      return;
+    }
+
     _attributes.set(key, value);
+
+    _updateChangedKeys(key);
+
+    notifyListeners();
   }
 }
