@@ -111,6 +111,7 @@ class ApiAuthDriver extends AuthDriver {
 
       authResponse = getAuthResponse(response.json());
       _saveFile.save(authResponse!.toJson());
+      return authResponse!.accessToken;
     }
 
     throw Exception('No route name provided');
