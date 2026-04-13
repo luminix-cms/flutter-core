@@ -20,3 +20,4 @@ export 'src/service_provider.dart';
 export 'src/relation.dart';
 export 'src/relation/relations.dart';
 export 'package:http/http.dart' show MultipartFile;
+export 'src/http/response.dart';

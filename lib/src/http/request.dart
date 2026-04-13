@@ -10,6 +10,7 @@ class Request<T> implements Future<Response> {
 
   // Callback for token refresh - inject this from your auth service
   static Future<String> Function()? _tokenRefreshCallback;
+  static void Function(Response)? _onRequestError;
   static const int _maxRetries = 1;
 
   Request({
@@ -27,6 +28,14 @@ class Request<T> implements Future<Response> {
   /// Clears the global token refresh callback. Call this on logout.
   static void clearTokenRefreshCallback() {
     _tokenRefreshCallback = null;
+  }
+
+  static void setRequestErrorCallback(void Function(Response) callback) {
+    _onRequestError = callback;
+  }
+
+  static void clearRequestErrorCallback() {
+    _onRequestError = null;
   }
 
   static Future<Response> _makeRequest(
@@ -106,6 +115,9 @@ class Request<T> implements Future<Response> {
       }
 
       final response = Response(httpResponse);
+      if (response.failed()) {
+        _onRequestError?.call(response);
+      }
       return response;
     } catch (error) {
       print('request try catch');

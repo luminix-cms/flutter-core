@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:luminix_flutter/luminix_flutter.dart';
 
 import 'luminix_service_provider.dart';
+import 'http/request.dart';
+import 'http/response.dart';
 
 class LuminixApp extends StatefulWidget {
   static LuminixAppData of(BuildContext context) =>
@@ -12,12 +14,14 @@ class LuminixApp extends StatefulWidget {
   final List<ServiceProviderConstructor> providers;
   final Widget child;
   final void Function(Application)? onInit;
+  final void Function(Response)? onRequestError;
 
   LuminixApp({
     super.key,
     this.configuration = const AppConfiguration(),
     this.providers = const [],
     this.onInit,
+    this.onRequestError,
     required this.child,
   });
 
@@ -33,6 +37,9 @@ class _LuminixAppState extends State<LuminixApp> {
   @override
   void initState() {
     super.initState();
+    if (widget.onRequestError != null) {
+      Request.setRequestErrorCallback(widget.onRequestError!);
+    }
     app = Application()
       ..withProviders([LuminixServiceProvider.new, ...widget.providers])
       ..withConfiguration(widget.configuration);
@@ -45,6 +52,7 @@ class _LuminixAppState extends State<LuminixApp> {
 
   @override
   void dispose() {
+    Request.clearRequestErrorCallback();
     app.dispose();
     super.dispose();
   }
