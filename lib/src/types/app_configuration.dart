@@ -1,3 +1,4 @@
+import 'package:luminix_flutter/src/a11y/config/a11y_configuration.dart';
 import 'package:luminix_flutter/src/base_model.dart';
 import 'package:luminix_flutter/src/types/json_encodable.dart';
 
@@ -8,6 +9,7 @@ class AppConfiguration implements JsonEncodable {
     this.url,
     this.manifest,
     this.auth,
+    this.a11y,
   });
 
   final String? environment;
@@ -15,12 +17,14 @@ class AppConfiguration implements JsonEncodable {
   final String? url;
   final Map<String, dynamic>? manifest;
   final AuthConfiguration? auth;
+  final A11yConfiguration? a11y;
 
   @override
   Map<String, dynamic> toMap() {
     return {
       'manifest': manifest,
       'auth': auth?.toMap(),
+      'a11y': a11y,
       'app': {'env': environment, 'debug': debug, 'url': url}
         ..removeWhere((key, value) => value == null),
     }..removeWhere((key, value) => value == null);

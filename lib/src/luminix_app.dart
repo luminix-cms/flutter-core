@@ -45,6 +45,7 @@ class _LuminixAppState extends State<LuminixApp> {
     app = Application()
       ..withProviders([
         LuminixServiceProvider.new,
+        LuminixAccessibilityServiceProvider.new,
         ...widget.providers,
       ])
       ..withConfiguration(widget.configuration);
