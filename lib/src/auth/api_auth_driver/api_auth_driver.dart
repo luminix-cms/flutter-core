@@ -4,8 +4,6 @@ import 'package:luminix_flutter/luminix_flutter.dart';
 import 'package:luminix_flutter/src/auth/api_auth_driver/auth_response.dart';
 import 'package:luminix_flutter/src/utils/prefs_file.dart';
 
-import '../auth_driver.dart';
-
 class ApiAuthDriver extends AuthDriver {
   final PropertyBag _config;
   final RouteService Function() _routeProvider;
@@ -21,6 +19,10 @@ class ApiAuthDriver extends AuthDriver {
   final Completer<bool> _comp = Completer<bool>();
 
   Future<bool> get isReady => _comp.future;
+
+  @override
+  Future<void> get ready =>
+      _comp.future.then<void>((_) {}, onError: (Object _) {});
 
   AuthResponse? authResponse;
 

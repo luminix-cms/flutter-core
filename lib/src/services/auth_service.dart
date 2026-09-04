@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:luminix_flutter/luminix_flutter.dart';
-import 'package:luminix_flutter/src/auth/auth_driver.dart';
 import 'package:luminix_flutter/src/http/request.dart' show Request;
 
 class AuthService {
   final Application app;
 
   Completer<String>? _refreshCompleter;
+
+  final List<void Function(dynamic id)> _identityListeners = [];
 
   AuthService(this.app) {
     // Register a single-flight token refresh callback so multiple concurrent 401s
@@ -22,6 +23,22 @@ class AuthService {
   AuthDriver _getDriver() {
     final config = app.make('config') as PropertyBag;
     return app.make('auth:${config.get('auth.driver', 'api')}');
+  }
+
+  Future<void> get ready => _getDriver().ready;
+
+  void addIdentityListener(void Function(dynamic id) listener) {
+    _identityListeners.add(listener);
+  }
+
+  void removeIdentityListener(void Function(dynamic id) listener) {
+    _identityListeners.remove(listener);
+  }
+
+  void _notifyIdentity(dynamic id) {
+    for (final listener in List.of(_identityListeners)) {
+      listener(id);
+    }
   }
 
   BaseModel? user() {
@@ -39,18 +56,19 @@ class AuthService {
   Future<void> attempt(
     Map<String, dynamic> credentials, [
     bool remember = false,
-  ]) {
-    return _getDriver().attempt(credentials, remember);
+  ]) async {
+    await _getDriver().attempt(credentials, remember);
+    _notifyIdentity(id());
   }
 
   Future<String> refreshToken() {
     return _getDriver().refreshToken();
   }
 
-  Future<void> logout() {
-    // Clear the global callback to avoid accidental refresh attempts after logout
+  Future<void> logout() async {
     Request.clearTokenRefreshCallback();
-    return _getDriver().logout();
+    await _getDriver().logout();
+    _notifyIdentity(null);
   }
 
   /// Ensures only one refresh call runs at a time. Returns the refreshed token.
