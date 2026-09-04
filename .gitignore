@@ -9,3 +9,9 @@ pubspec.lock
 # Avoid committing the generated plugin registrant file.
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Flutter build output
+build/
+
+# Configuração local do agente
+.claude/settings.local.json

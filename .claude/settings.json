@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/geovane/.claude/skills/arandu/references/**)",
+      "Bash(git checkout *)",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Read(//Users/geovane/AranduTech/base_um_app/lib/models/**)"
+    ]
+  }
+}
