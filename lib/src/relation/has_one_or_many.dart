@@ -24,7 +24,8 @@ class HasOneOrMany extends Relation {
   Future<void> saveQuietly(BaseModel item) async {
     if (item.type != modelBuilder().schemaName) {
       throw Exception(
-          'HasOneOrMany.saveQuietly() expects a ${modelBuilder().schemaName} instance');
+        'HasOneOrMany.saveQuietly() expects a ${modelBuilder().schemaName} instance',
+      );
     }
 
     item.setAttribute(getForeignKey(), parent.getKey());

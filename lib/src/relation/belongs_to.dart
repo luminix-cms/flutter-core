@@ -35,15 +35,14 @@ class BelongsTo extends Relation {
   void associate(BaseModel item) async {
     if (item.type != modelBuilder().schemaName) {
       throw Exception(
-          'BelongsTo.associate() expects a ${modelBuilder().schemaName} instance');
+        'BelongsTo.associate() expects a ${modelBuilder().schemaName} instance',
+      );
     }
 
     if (!item.exists) {
       throw Exception('BelongsTo.associate() expects a persisted instance');
     }
 
-    return parent.update({
-      getForeignKey(): item.getKey(),
-    });
+    return parent.update({getForeignKey(): item.getKey()});
   }
 }

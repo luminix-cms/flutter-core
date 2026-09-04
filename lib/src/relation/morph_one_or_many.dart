@@ -36,7 +36,8 @@ class MorphOneOrMany extends HasOneOrMany {
 
     if (item.type != related.schemaName) {
       throw Exception(
-          'MorphOneOrMany.saveQuietly() expects a ${related.schemaName} instance');
+        'MorphOneOrMany.saveQuietly() expects a ${related.schemaName} instance',
+      );
     }
 
     final relation = guessInverseRelation();

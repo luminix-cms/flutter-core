@@ -19,8 +19,10 @@ class HasMany extends HasOneOrMany {
     return true;
   }
 
-  Future<ModelPaginatedResponse<BaseModel>> get(
-      [int page = 1, String? replaceLinksWith]) {
+  Future<ModelPaginatedResponse<BaseModel>> get([
+    int page = 1,
+    String? replaceLinksWith,
+  ]) {
     return query().get(page: page, replaceLinksWith: replaceLinksWith);
   }
 
@@ -39,13 +41,16 @@ class HasMany extends HasOneOrMany {
   Future<void> saveManyQuietly(List<BaseModel> models) async {
     if (!models.every((model) => model.type == modelBuilder().schemaName)) {
       throw Exception(
-          'HasMany.saveManyQuietly() expects a ${modelBuilder().schemaName} instance');
+        'HasMany.saveManyQuietly() expects a ${modelBuilder().schemaName} instance',
+      );
     }
 
-    Future.wait(models.map((model) {
-      model.setAttribute(getForeignKey(), parent.getKey());
-      return model.save();
-    }));
+    Future.wait(
+      models.map((model) {
+        model.setAttribute(getForeignKey(), parent.getKey());
+        return model.save();
+      }),
+    );
   }
 
   Future<void> saveMany(List<BaseModel> models) async {

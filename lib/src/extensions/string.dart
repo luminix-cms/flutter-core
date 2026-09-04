@@ -2,11 +2,13 @@ extension StringtoCamelCaseExtension on String {
   String camelCase() {
     if (isEmpty) return '';
 
-    final words = replaceAll(
-            RegExp(r'[^\w\s]+'), '') // Remove caracteres especiais
-        .split(' ')
-        .where((word) => word.isNotEmpty) // Remove palavras vazias
-        .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase());
+    final words =
+        replaceAll(RegExp(r'[^\w\s]+'), '') // Remove caracteres especiais
+            .split(' ')
+            .where((word) => word.isNotEmpty) // Remove palavras vazias
+            .map(
+              (word) => word[0].toUpperCase() + word.substring(1).toLowerCase(),
+            );
 
     return words.first + words.skip(1).join('');
   }

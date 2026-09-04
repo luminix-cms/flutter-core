@@ -6,9 +6,8 @@ class PropertyBag<T extends JsonEncodable> {
 
   final List<String> lockedKeys = [];
 
-  PropertyBag._internal({
-    required Map<String, dynamic> properties,
-  }) : _properties = properties;
+  PropertyBag._internal({required Map<String, dynamic> properties})
+    : _properties = properties;
 
   factory PropertyBag({required T bag}) =>
       PropertyBag._internal(properties: bag.toMap());
@@ -51,21 +50,16 @@ class PropertyBag<T extends JsonEncodable> {
     if (path == '.') {
       if (lockedKeys.any((item) => getMapFieldValue(value, item) != null)) {
         throw Exception(
-            'Cannot merge a path "$path" that would override a locked path');
+          'Cannot merge a path "$path" that would override a locked path',
+        );
       }
-      _properties = {
-        ..._properties,
-        ...value,
-      };
+      _properties = {..._properties, ...value};
       return;
     }
     final currentValue = get(path);
 
     if (currentValue is Map) {
-      return this.set(path, {
-        ...currentValue,
-        ...value,
-      });
+      return this.set(path, {...currentValue, ...value});
     }
 
     if (currentValue == null) {

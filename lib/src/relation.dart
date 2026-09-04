@@ -69,7 +69,8 @@ class Relation<T extends BaseModel> {
     }
 
     throw Exception(
-        'Could not find inverse relation for ${this.parent.type}.$currentRelationType');
+      'Could not find inverse relation for ${this.parent.type}.$currentRelationType',
+    );
   }
 
   void set(dynamic items) {
@@ -103,10 +104,16 @@ class Relation<T extends BaseModel> {
     return modelBuilder().query();
   }
 
-  Builder where(
-      {required String key, required dynamic value, Filter? filterOperator}) {
-    return query()
-        .where(key: key, value: value, filterOperator: filterOperator);
+  Builder where({
+    required String key,
+    required dynamic value,
+    Filter? filterOperator,
+  }) {
+    return query().where(
+      key: key,
+      value: value,
+      filterOperator: filterOperator,
+    );
   }
 
   Builder whereNull(String key) {

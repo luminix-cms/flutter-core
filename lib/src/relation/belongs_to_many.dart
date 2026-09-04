@@ -32,8 +32,10 @@ class BelongsToMany extends Relation {
     return query;
   }
 
-  Future<ModelPaginatedResponse<BaseModel>> get(
-      [int page = 1, String? replaceLinksWith]) {
+  Future<ModelPaginatedResponse<BaseModel>> get([
+    int page = 1,
+    String? replaceLinksWith,
+  ]) {
     return query().get(page: page, replaceLinksWith: replaceLinksWith);
   }
 
@@ -49,15 +51,14 @@ class BelongsToMany extends Relation {
     return query().find(id);
   }
 
-  Future<Response> attachQuietly(dynamic id,
-      [Map<String, dynamic> pivot = const {}]) {
+  Future<Response> attachQuietly(
+    dynamic id, [
+    Map<String, dynamic> pivot = const {},
+  ]) {
     return route.call(
       generator: RouteGenerator(
         name: 'luminix.${parent.type}.${getName()}:attach',
-        replacer: {
-          parent.primaryKey: parent.getKey(),
-          'itemId': id,
-        },
+        replacer: {parent.primaryKey: parent.getKey(), 'itemId': id},
       ),
     );
     // TODO: Implement withData
@@ -71,8 +72,9 @@ class BelongsToMany extends Relation {
     await attachQuietly(id, pivot);
 
     if (items is List) {
-      final currentIndex =
-          (items as List<BaseModel>).indexWhere((item) => item.getKey() == id);
+      final currentIndex = (items as List<BaseModel>).indexWhere(
+        (item) => item.getKey() == id,
+      );
       final freshItem = await modelBuilder().query().find(id);
 
       if (freshItem == null) {
@@ -93,10 +95,7 @@ class BelongsToMany extends Relation {
     await route.call(
       generator: RouteGenerator(
         name: 'luminix.${parent.type}.${getName()}:detach',
-        replacer: {
-          parent.primaryKey: parent.getKey(),
-          'itemId': id,
-        },
+        replacer: {parent.primaryKey: parent.getKey(), 'itemId': id},
       ),
     );
   }
@@ -105,8 +104,9 @@ class BelongsToMany extends Relation {
     await detachQuietly(id);
 
     if (items is List<BaseModel>) {
-      final currentIndex =
-          (items as List<BaseModel>).indexWhere((item) => item.getKey() == id);
+      final currentIndex = (items as List<BaseModel>).indexWhere(
+        (item) => item.getKey() == id,
+      );
       if (-1 != currentIndex) {
         items.pull(currentIndex);
       }
@@ -117,9 +117,7 @@ class BelongsToMany extends Relation {
     await route.call(
       generator: RouteGenerator(
         name: 'luminix.${parent.type}.${getName()}:sync',
-        replacer: {
-          parent.primaryKey: parent.getKey(),
-        },
+        replacer: {parent.primaryKey: parent.getKey()},
       ),
     );
     // TODO: Implement withData
@@ -127,13 +125,15 @@ class BelongsToMany extends Relation {
   }
 
   Future<void> syncWithPivotValuesQuietly(
-      dynamic ids, Map<String, dynamic> pivot) async {
+    dynamic ids,
+    Map<String, dynamic> pivot,
+  ) async {
     await route.call(
-        generator: RouteGenerator(
-            name: 'luminix.${parent.type}.${getName()}:sync',
-            replacer: {
-          parent.primaryKey: parent.getKey(),
-        }));
+      generator: RouteGenerator(
+        name: 'luminix.${parent.type}.${getName()}:sync',
+        replacer: {parent.primaryKey: parent.getKey()},
+      ),
+    );
     // TODO: Implement withData
     // (client) => client.withData(ids.map((id) => ({
     //     [this.getRelated().getSchema().primaryKey]: id,
@@ -154,7 +154,9 @@ class BelongsToMany extends Relation {
   }
 
   Future<void> syncWithPivotValues(
-      List<dynamic> ids, Map<String, dynamic> pivot) async {
+    List<dynamic> ids,
+    Map<String, dynamic> pivot,
+  ) async {
     await syncWithPivotValuesQuietly(ids, pivot);
 
     final newItems = await all();

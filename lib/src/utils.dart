@@ -70,7 +70,9 @@ void setMapFieldValue(Map map, String field, Object? value) {
 }
 
 Map<String, dynamic> mergeMaps(
-    Map<String, dynamic> map1, Map<String, dynamic> map2) {
+  Map<String, dynamic> map1,
+  Map<String, dynamic> map2,
+) {
   final result = Map<String, dynamic>.from(map1);
   map2.forEach((key, value) {
     if (result.containsKey(key) && result[key] is Map && value is Map) {

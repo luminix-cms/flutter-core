@@ -17,11 +17,11 @@ class RouteService with Reducible {
 
   final AuthService Function() _authProvider;
 
-  RouteService(
-      {required this.routes,
-      this.appUrl = '',
-      required AuthService Function() authProvider})
-      : _authProvider = authProvider;
+  RouteService({
+    required this.routes,
+    this.appUrl = '',
+    required AuthService Function() authProvider,
+  }) : _authProvider = authProvider;
 
   AuthService get auth => _authProvider();
 
@@ -77,16 +77,20 @@ class RouteService with Reducible {
     final params = matches.isNotEmpty
         ? matches.map((match) => match.group(1)!).toList()
         : <String>[];
-    final replaceKeys =
-        generator.replacer!.mapEntries((entry) => entry.key).toList();
-    final missingParams =
-        params.where((param) => !replaceKeys.contains(param)).toList();
-    final extraParams =
-        replaceKeys.filter((key) => !params.contains(key)).toList();
+    final replaceKeys = generator.replacer!
+        .mapEntries((entry) => entry.key)
+        .toList();
+    final missingParams = params
+        .where((param) => !replaceKeys.contains(param))
+        .toList();
+    final extraParams = replaceKeys
+        .filter((key) => !params.contains(key))
+        .toList();
 
     if (missingParams.isNotEmpty) {
       throw Exception(
-          'Missing values for parameter(s): ${missingParams.join(', ')}');
+        'Missing values for parameter(s): ${missingParams.join(', ')}',
+      );
     }
 
     if (extraParams.isNotEmpty) {
@@ -94,9 +98,10 @@ class RouteService with Reducible {
     }
 
     final newPath = params.fold(
-        url,
-        (acc, param) =>
-            acc.replaceAll('{$param}', '${generator.replacer![param]}'));
+      url,
+      (acc, param) =>
+          acc.replaceAll('{$param}', '${generator.replacer![param]}'),
+    );
 
     return '$appUrl/$newPath';
   }

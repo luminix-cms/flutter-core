@@ -31,9 +31,6 @@ class MorphTo extends BelongsTo {
   }
 
   Future<void> dissociate() {
-    return parent.update({
-      '${getName()}_id': null,
-      '${getName()}_type': null,
-    });
+    return parent.update({'${getName()}_id': null, '${getName()}_type': null});
   }
 }

@@ -1,7 +1,4 @@
-typedef ReducerCallback<T> = T Function(
-  T value, [
-  List<dynamic>? args,
-]);
+typedef ReducerCallback<T> = T Function(T value, [List<dynamic>? args]);
 
 class Reducer<T> {
   final int priority;

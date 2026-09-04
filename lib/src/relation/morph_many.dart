@@ -20,8 +20,10 @@ class MorphMany extends MorphOneOrMany {
     return true;
   }
 
-  Future<ModelPaginatedResponse<BaseModel>> get(
-      [int page = 1, String? replaceLinksWith]) {
+  Future<ModelPaginatedResponse<BaseModel>> get([
+    int page = 1,
+    String? replaceLinksWith,
+  ]) {
     return query().get(page: page, replaceLinksWith: replaceLinksWith);
   }
 
@@ -41,14 +43,17 @@ class MorphMany extends MorphOneOrMany {
     final related = modelBuilder();
     if (!models.every((model) => model.type == related.schemaName)) {
       throw Exception(
-          'MorphMany.saveManyQuietly() expects a ${related.schemaName} instance');
+        'MorphMany.saveManyQuietly() expects a ${related.schemaName} instance',
+      );
     }
 
-    await Future.wait(models.map((model) {
-      model.setAttribute('${getName()}_id', parent.getKey());
-      model.setAttribute('${getName()}_type', parent.type);
-      return model.save();
-    }));
+    await Future.wait(
+      models.map((model) {
+        model.setAttribute('${getName()}_id', parent.getKey());
+        model.setAttribute('${getName()}_type', parent.type);
+        return model.save();
+      }),
+    );
   }
 
   Future<void> save(BaseModel item) async {

@@ -20,8 +20,12 @@ mixin Reducible {
 
       final macros = reducers[name]!;
 
-      macros.sortedBy((it) => it.priority).fold(args.first,
-          (acc, reducer) => reducer.callback(acc, args.skip(1).toList()));
+      macros
+          .sortedBy((it) => it.priority)
+          .fold(
+            args.first,
+            (acc, reducer) => reducer.callback(acc, args.skip(1).toList()),
+          );
     }
 
     super.noSuchMethod(invocation); // Will throw.
@@ -38,16 +42,15 @@ mixin Reducible {
       reducers[name] = [];
     }
 
-    reducers[name]!.add(
-      Reducer<T>(callback, priority),
-    );
+    reducers[name]!.add(Reducer<T>(callback, priority));
 
     return () => removeReducer(name, callback);
   }
 
   removeReducer<T>(String name, ReducerCallback<T> callback) {
-    final index =
-        reducers[name]?.indexWhere((reducer) => reducer.callback == callback);
+    final index = reducers[name]?.indexWhere(
+      (reducer) => reducer.callback == callback,
+    );
     if (index == -1 || index == null) {
       return;
     }
