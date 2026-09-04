@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'application.dart';
 
 abstract class ServiceProvider {
@@ -8,7 +10,7 @@ abstract class ServiceProvider {
 
   void register() {}
 
-  void boot() {}
+  FutureOr<void> boot() {}
 
   void flush() {}
 }

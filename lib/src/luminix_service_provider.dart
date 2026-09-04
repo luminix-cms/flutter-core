@@ -45,19 +45,32 @@ class LuminixServiceProvider extends ServiceProvider {
     });
 
     app.singleton('auth:api', () {
-      return ApiAuthDriver(
-        app.make('config'),
-        () => app.make('route'),
-      );
+      return ApiAuthDriver(app.make('config'), () => app.make('route'));
     });
 
     app.singleton('auth', () {
       return AuthService(app);
     });
 
-    getIt.registerSingleton<RouteService>(app.make('route'));
-    // TODO: specify configuration as a singleton
-    getIt.registerSingleton<PropertyBag>(app.make('config'));
+    _replaceSingleton<RouteService>(app.make('route'));
+    _replaceSingleton<PropertyBag>(app.make('config'));
+  }
+
+  @override
+  void flush() {
+    _unregisterSingleton<RouteService>();
+    _unregisterSingleton<PropertyBag>();
+  }
+
+  void _replaceSingleton<T extends Object>(T instance) {
+    _unregisterSingleton<T>();
+    getIt.registerSingleton<T>(instance);
+  }
+
+  void _unregisterSingleton<T extends Object>() {
+    if (getIt.isRegistered<T>()) {
+      getIt.unregister<T>();
+    }
   }
 
   @override

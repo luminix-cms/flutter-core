@@ -15,6 +15,7 @@ class Application {
   Map<String, dynamic> singletons = {};
   Map<String, ServiceLoader> loaders = {};
   List<ServiceProviderConstructor> providers = [];
+  final List<ServiceProvider> _providerInstances = [];
 
   Application([List<ServiceProviderConstructor>? providers]) : super() {
     if (providers != null) {
@@ -56,42 +57,33 @@ class Application {
   }
 
   Future<void> create() async {
-    var providerInstances = providers.map((providerType) {
-      return (providerType as dynamic Function(Application)).call(this)
-          as ServiceProvider;
-    }).toList();
+    _providerInstances
+      ..clear()
+      ..addAll(
+        providers.map((providerType) {
+          return (providerType as dynamic Function(Application)).call(this)
+              as ServiceProvider;
+        }),
+      );
 
-    // init'
-
-    for (var provider in providerInstances) {
+    for (var provider in _providerInstances) {
       provider.register();
     }
 
-    // booting
-
-    for (var provider in providerInstances) {
-      provider.boot();
+    for (var provider in _providerInstances) {
+      await provider.boot();
     }
-
-    // booted
-
-    // once('flushing', () {
-    //   for (var provider in providerInstances) {
-    //     provider.flush();
-    //   }
-    // });
-
-    // ready
   }
 
   void dispose() {
-    // flushing
+    for (var provider in _providerInstances.reversed) {
+      provider.flush();
+    }
 
+    _providerInstances.clear();
     singletons.clear();
     loaders.clear();
     _configuration.clear();
     providers.clear();
-
-    // flushed
   }
 }

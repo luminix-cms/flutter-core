@@ -13,6 +13,7 @@ class LuminixApp extends StatefulWidget {
   final AppConfiguration configuration;
   final List<ServiceProviderConstructor> providers;
   final Widget child;
+  final Widget? splash;
   final void Function(Application)? onInit;
   final void Function(Response)? onRequestError;
 
@@ -22,6 +23,7 @@ class LuminixApp extends StatefulWidget {
     this.providers = const [],
     this.onInit,
     this.onRequestError,
+    this.splash,
     required this.child,
   });
 
@@ -41,13 +43,31 @@ class _LuminixAppState extends State<LuminixApp> {
       Request.setRequestErrorCallback(widget.onRequestError!);
     }
     app = Application()
-      ..withProviders([LuminixServiceProvider.new, ...widget.providers])
+      ..withProviders([
+        LuminixServiceProvider.new,
+        ...widget.providers,
+      ])
       ..withConfiguration(widget.configuration);
 
-    app.create().then((_) {
-      setState(() => initialized = true);
-      widget.onInit?.call(app);
-    });
+    app.create().then(
+      (_) {
+        if (!mounted) return;
+        setState(() => initialized = true);
+        widget.onInit?.call(app);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stackTrace,
+            library: 'luminix_flutter',
+            context: ErrorDescription('ao inicializar a Application'),
+          ),
+        );
+        if (!mounted) return;
+        setState(() => initialized = true);
+      },
+    );
   }
 
   @override
@@ -62,7 +82,7 @@ class _LuminixAppState extends State<LuminixApp> {
     return LuminixAppData(
       app: app,
       initialized: initialized,
-      child: widget.child,
+      child: initialized ? widget.child : (widget.splash ?? widget.child),
     );
   }
 }
