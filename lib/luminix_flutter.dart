@@ -18,6 +18,8 @@ export 'src/services/route_service.dart';
 export 'src/services/auth_service.dart';
 export 'src/service_provider.dart';
 
+export 'accessibility.dart';
+
 export 'src/relation.dart';
 export 'src/relation/relations.dart';
 export 'package:http/http.dart' show MultipartFile;
