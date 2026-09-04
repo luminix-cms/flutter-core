@@ -25,3 +25,26 @@ dev_dependencies:
   lints: ^3.0.0
   flutter_test:
     sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/AtkinsonHyperlegible/OFL.txt
+    - assets/fonts/Lexend/OFL.txt
+    - assets/fonts/OpenDyslexic/OFL.txt
+
+  fonts:
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Regular.ttf
+        - asset: assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
+    - family: Lexend
+      fonts:
+        - asset: assets/fonts/Lexend/Lexend[wght].ttf
+    - family: OpenDyslexic
+      fonts:
+        - asset: assets/fonts/OpenDyslexic/OpenDyslexic-Regular.otf
+        - asset: assets/fonts/OpenDyslexic/OpenDyslexic-Bold.otf
+          weight: 700
