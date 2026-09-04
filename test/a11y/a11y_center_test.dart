@@ -475,5 +475,21 @@ void main() {
 
       handle.dispose();
     });
+
+    // Desligar a camada é o caminho de quem não quer acessibilidade e mesmo
+    // assim mantém o `builder:` na MaterialApp — remover a configuração não
+    // pode deixar um botão flutuante órfão sobre o app.
+    testWidgets('não aparece quando a camada está desligada', (tester) async {
+      final service = await _servico(
+        configuration: const A11yConfiguration(enabled: false),
+      );
+
+      await tester.pumpWidget(
+        _sob(service: service, child: const Text('conteúdo')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(A11yFab), findsNothing);
+    });
   });
 }

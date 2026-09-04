@@ -113,6 +113,11 @@ class _A11yCenterHostState extends State<A11yCenterHost>
 
   @override
   Widget build(BuildContext context) {
+    // Desligada, a camada não deixa rastro na árvore. Gatear só o FAB deixaria
+    // `openCenter()` abrir uma Central que o serviço se recusa a persistir —
+    // uma tela que aceita toques e não guarda nada é pior que nenhuma.
+    if (!widget.configuration.enabled) return widget.child;
+
     final open = widget.presenter.isOpen;
     final showsCenter = open || !_controller.isDismissed;
     final fab = open ? null : _fab(context);
