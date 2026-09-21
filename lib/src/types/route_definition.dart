@@ -5,9 +5,9 @@ class RouteDefinition {
   RouteDefinition({required this.name, required this.methods});
 
   factory RouteDefinition.fromList(List<String> json) {
-    return RouteDefinition(
-      name: json.first,
-      methods: json.skip(1).toList(),
-    );
+    return RouteDefinition(name: json.first, methods: json.skip(1).toList());
   }
+
+  @override
+  String toString() => 'RouteDefinition(name: $name, methods: $methods)';
 }

@@ -1,4 +1,4 @@
-import 'package:luminix_flutter_core/src/utils.dart';
+import 'package:luminix_flutter/src/utils.dart';
 import 'types/json_encodable.dart';
 
 class PropertyBag<T extends JsonEncodable> {
@@ -6,12 +6,11 @@ class PropertyBag<T extends JsonEncodable> {
 
   final List<String> lockedKeys = [];
 
-  PropertyBag._internal({
-    required Map<String, dynamic> properties,
-  }) : _properties = properties;
+  PropertyBag._internal({required Map<String, dynamic> properties})
+    : _properties = properties;
 
   factory PropertyBag({required T bag}) =>
-      PropertyBag._internal(properties: bag.toJson());
+      PropertyBag._internal(properties: bag.toMap());
 
   factory PropertyBag.fromMap({required Map<String, dynamic> map}) =>
       PropertyBag._internal(properties: map);
@@ -36,7 +35,7 @@ class PropertyBag<T extends JsonEncodable> {
         throw Exception('Cannot set the root path when there are locked paths');
       }
 
-      if (value! is Map<String, dynamic> || value == null) {
+      if (value is! Map<String, dynamic>) {
         throw Exception('Value must be an object');
       }
 
@@ -51,21 +50,16 @@ class PropertyBag<T extends JsonEncodable> {
     if (path == '.') {
       if (lockedKeys.any((item) => getMapFieldValue(value, item) != null)) {
         throw Exception(
-            'Cannot merge a path "$path" that would override a locked path');
+          'Cannot merge a path "$path" that would override a locked path',
+        );
       }
-      _properties = {
-        ..._properties,
-        ...value,
-      };
+      _properties = {..._properties, ...value};
       return;
     }
     final currentValue = get(path);
 
     if (currentValue is Map) {
-      return this.set(path, {
-        ...currentValue,
-        ...value,
-      });
+      return this.set(path, {...currentValue, ...value});
     }
 
     if (currentValue == null) {

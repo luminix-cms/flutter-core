@@ -1,4 +1,4 @@
-import 'package:luminix_flutter_core/src/types/reducer.dart';
+import 'package:luminix_flutter/src/types/reducer.dart';
 import 'package:dartx/dartx.dart';
 
 mixin Reducible {
@@ -20,16 +20,20 @@ mixin Reducible {
 
       final macros = reducers[name]!;
 
-      macros.sortedBy((it) => it.priority).fold(args.first,
-          (acc, reducer) => reducer.callback(acc, args.skip(1).toList()));
+      macros
+          .sortedBy((it) => it.priority)
+          .fold(
+            args.first,
+            (acc, reducer) => reducer.callback(acc, args.skip(1).toList()),
+          );
     }
 
     super.noSuchMethod(invocation); // Will throw.
   }
 
-  reducer({
+  reducer<T>({
     required String name,
-    required ReducerCallback callback,
+    required ReducerCallback<T> callback,
     int priority = 10,
   }) {
     // TODO: Check if the reducers name is not a method name
@@ -38,16 +42,15 @@ mixin Reducible {
       reducers[name] = [];
     }
 
-    reducers[name]!.add(
-      Reducer(callback, priority),
-    );
+    reducers[name]!.add(Reducer<T>(callback, priority));
 
     return () => removeReducer(name, callback);
   }
 
-  removeReducer(String name, ReducerCallback callback) {
-    final index =
-        reducers[name]?.indexWhere((reducer) => reducer.callback == callback);
+  removeReducer<T>(String name, ReducerCallback<T> callback) {
+    final index = reducers[name]?.indexWhere(
+      (reducer) => reducer.callback == callback,
+    );
     if (index == -1 || index == null) {
       return;
     }

@@ -1,3 +1,3 @@
 abstract class JsonEncodable {
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toMap();
 }

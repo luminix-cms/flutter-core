@@ -1,9 +1,11 @@
-name: luminix_flutter_core
+name: luminix_flutter
 description: Pacote de utilitários de integração Luminix com Flutter
-version: 1.0.0
+homepage: https://github.com/AranduTech
+publish_to: https://pub-registry.arandutech.com.br
+version: 0.1.0
 
 environment:
-  sdk: ^3.4.1
+  sdk: ^3.10.0
 
 # Add regular dependencies here.
 dependencies:
@@ -14,11 +16,35 @@ dependencies:
   dartx: ^1.2.0
   dio: ^5.6.0
   collection: ^1.18.0
+  http: ^1.2.2
+  shared_preferences: ^2.3.3
+  get_it: ^8.0.2
+  qs_dart: ^1.3.0
 
 dev_dependencies:
   lints: ^3.0.0
-  test: ^1.24.0
+  flutter_test:
+    sdk: flutter
 
-executables:
-  # Gerador de classes através de um arquivo JSON
-  generate_class: bin/flutter_json_generator.dart
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/AtkinsonHyperlegible/OFL.txt
+    - assets/fonts/Lexend/OFL.txt
+    - assets/fonts/OpenDyslexic/OFL.txt
+
+  fonts:
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Regular.ttf
+        - asset: assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Bold.ttf
+          weight: 700
+    - family: Lexend
+      fonts:
+        - asset: assets/fonts/Lexend/Lexend[wght].ttf
+    - family: OpenDyslexic
+      fonts:
+        - asset: assets/fonts/OpenDyslexic/OpenDyslexic-Regular.otf
+        - asset: assets/fonts/OpenDyslexic/OpenDyslexic-Bold.otf
+          weight: 700

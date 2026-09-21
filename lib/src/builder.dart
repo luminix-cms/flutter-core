@@ -1,14 +1,12 @@
-import 'package:dio/dio.dart';
-import 'package:luminix_flutter_core/src/route.dart';
-import 'package:luminix_flutter_core/src/types/route_generator.dart';
+import 'package:luminix_flutter/src/http/client.dart';
+import 'package:luminix_flutter/src/services/route_service.dart';
+import 'package:luminix_flutter/src/types/route_generator.dart';
 
+import 'base_model.dart';
 import 'property_bag.dart';
 import 'extensions/string.dart';
 
-enum SortDirection {
-  asc,
-  desc,
-}
+enum SortDirection { asc, desc }
 
 enum Filter {
   notEquals,
@@ -18,21 +16,63 @@ enum Filter {
   lessThanOrEquals,
 }
 
-class Builder {
+class ModelPaginatedResponse<T> {
+  final List<T> data;
+  final int currentPage;
+  final int? from;
+  final int lastPage;
+  final int perPage;
+  final int? to;
+  final int total;
+
+  ModelPaginatedResponse({
+    required this.data,
+    required this.currentPage,
+    required this.from,
+    required this.lastPage,
+    required this.perPage,
+    required this.to,
+    required this.total,
+  });
+
+  factory ModelPaginatedResponse.fromJson(
+    List<T> items,
+    Map<String, dynamic> map,
+  ) {
+    return ModelPaginatedResponse(
+      data: items,
+      currentPage: map['meta']['current_page'],
+      from: map['meta']['from'],
+      lastPage: map['meta']['last_page'],
+      perPage: map['meta']['per_page'],
+      to: map['meta']['to'],
+      total: map['meta']['total'],
+    );
+  }
+}
+
+class Builder<T extends BaseModel> {
   final PropertyBag bag = PropertyBag.fromMap(map: {});
+
   final String schemaKey;
-  final RouteFacade route;
+  final RouteService route;
+  final Map<String, dynamic> schema;
+  final PropertyBag config;
+  final T Function(Map<String, dynamic>) modelBuilder;
 
   Builder({
     required this.schemaKey,
     required this.route,
+    required this.schema,
+    required this.config,
+    required this.modelBuilder,
   });
 
   void lock(String path) {
     bag.lock(path);
   }
 
-  Builder whereBetween<T>(String key, (T, T) value) {
+  Builder<T> whereBetween<R>(String key, (R, R) value) {
     if (!bag.has('where')) {
       bag.set('where', {});
     }
@@ -41,7 +81,7 @@ class Builder {
     return this;
   }
 
-  Builder whereNotBetween<T>(String key, (T, T) value) {
+  Builder<T> whereNotBetween<R>(String key, (R, R) value) {
     if (!bag.has('where')) {
       bag.set('where', {});
     }
@@ -50,7 +90,7 @@ class Builder {
     return this;
   }
 
-  Builder whereNull(String key) {
+  Builder<T> whereNull(String key) {
     if (!bag.has('where')) {
       bag.set('where', {});
     }
@@ -58,7 +98,7 @@ class Builder {
     return this;
   }
 
-  Builder whereNotNull(String key) {
+  Builder<T> whereNotNull(String key) {
     if (!bag.has('where')) {
       bag.set('where', {});
     }
@@ -66,13 +106,16 @@ class Builder {
     return this;
   }
 
-  Builder limit(int value) {
-    bag.set('per_page', value);
+  Builder<T> limit(int value) {
+    bag.set('per_page', '$value');
     return this;
   }
 
-  Builder where(
-      {required String key, required dynamic value, Filter? filterOperator}) {
+  Builder<T> where({
+    required String key,
+    required dynamic value,
+    Filter? filterOperator,
+  }) {
     if (!bag.has('where')) {
       bag.set('where', {});
     }
@@ -82,71 +125,136 @@ class Builder {
     }
 
     if (filterOperator == null) {
-      bag.set('where.${key.camelCase()}', value);
+      bag.set('where.$key', value);
       return this;
     }
 
-    final String suffix = filterOperator.name.capitalize();
+    final String suffix = filterOperator.name;
 
-    bag.set('where.${key.camelCase()}$suffix', value);
+    bag.set('where.$key:$suffix', value);
 
     return this;
   }
 
-  Builder orderBy(String column,
-      [SortDirection direction = SortDirection.asc]) {
+  Builder<T> withRelation(String relation) {
+    final relations = bag.get('with', <String>[]) as List<String>;
+    if (!relations.contains(relation)) {
+      relations.add(relation);
+    }
+    bag.set('with', relations);
+    return this;
+  }
+
+  // with(relation: string | string[]): this {
+  //       const relations: string[] = this.bag.get('with', []) as string[];
+
+  //       const include = Array.isArray(relation) ? relation : [relation];
+
+  //       include.forEach((relation) => {
+  //           if (!relations.includes(relation)) {
+  //               relations.push(relation);
+  //           }
+  //       });
+
+  //       this.bag.set('with', relations);
+
+  //       return this;
+  //   }
+
+  Builder<T> orderBy(
+    String column, [
+    SortDirection direction = SortDirection.asc,
+  ]) {
     bag.set('order_by', '$column:${direction.name}');
     return this;
   }
 
-  Builder searchBy(String term) {
+  Builder<T> searchBy(String term) {
     bag.set('q', term);
     return this;
   }
 
-  Builder minified() {
+  Builder<T> minified() {
     bag.set('minified', true);
     return this;
   }
 
-  Builder unset(String key) {
+  Builder<T> unset(String key) {
     bag.delete(key);
     return this;
   }
 
-  Builder include(dynamic searchParams) {
-    throw UnimplementedError();
+  Builder<T> include(Map<String, String> searchParams) {
+    for (final key in searchParams.keys) {
+      bag.set(key, searchParams[key]);
+    }
+    return this;
   }
 
-  Future<Response> _exec([int page = 1, String? replaceLinksWith]) async {
+  // TODO: Return paginated response
+  Future<ModelPaginatedResponse<T>> _exec([
+    int page = 1,
+    String? replaceLinksWith,
+    Map<String, dynamic>? additionalParams,
+  ]) async {
     try {
       bag.set('page', page);
 
-      // TODO: Return model
-      return await route.call(
-          generator: RouteGenerator(name: 'luminix.$schemaKey.index'),
-          config: RouteCallConfig(
-            extra: bag.all(),
-          ));
+      final response = await route.call(
+        generator: RouteGenerator(name: 'luminix.$schemaKey.index'),
+        tap: (c) => c.withParams({...bag.all(), ...?additionalParams}),
+      );
+
+      final models = (response.json()['data'] as List<dynamic>).map((item) {
+        return modelBuilder(item)..exists = true;
+      }).toList();
+
+      return ModelPaginatedResponse<T>.fromJson(models, response.json());
     } catch (error) {
       print(error);
       rethrow;
     }
   }
 
-  get([int page = 1, String? replaceLinksWith]) async {
-    throw UnimplementedError();
+  Future<ModelPaginatedResponse<T>> get({
+    int page = 1,
+    String? replaceLinksWith,
+    Map<String, dynamic>? additionalParams,
+  }) async {
+    return _exec(page, replaceLinksWith, additionalParams);
   }
 
-  Future first() async {
-    throw UnimplementedError();
+  Future<T?> first() async {
+    final result = await limit(1)._exec(1);
+    if (result.data.isEmpty) {
+      return null;
+    }
+    return result.data.first;
   }
 
-  Future find(dynamic id) async {
-    throw UnimplementedError();
+  Future<T?> find(dynamic id) async {
+    final primaryKeyField = schema['primaryKey'];
+    if (primaryKeyField == null) {
+      throw Exception('Primary key not defined for schema $schemaKey');
+    }
+
+    final result = await where(
+      key: primaryKeyField,
+      value: id,
+    ).limit(1)._exec(1);
+
+    if (result.data.isEmpty) {
+      return null;
+    }
+
+    return result.data.first;
   }
 
-  Future all() async {
+  Future<ModelPaginatedResponse<T>> all() async {
+    // final limit = config.get('luminix.backend.api.max_per_page', 150)!;
+    // final firstPage = await this.limit(limit)._exec(1);
+    // TODO: Implement pagination to be returned from the `_exec` method
+
     throw UnimplementedError();
   }
 }

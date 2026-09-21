@@ -1,363 +1,465 @@
-import 'package:collection/collection.dart';
 import 'package:dartx/dartx.dart';
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
+import 'package:luminix_flutter/luminix_flutter.dart';
+import 'package:luminix_flutter/src/extensions/string.dart';
+import 'package:luminix_flutter/src/http/client.dart';
+import 'package:luminix_flutter/src/http/response.dart';
 
-import 'model.dart';
-import 'route.dart';
-import 'builder.dart';
-import 'property_bag.dart';
-import 'types/route_generator.dart';
+GetIt getIt = GetIt.instance;
 
-typedef ModelSaveOptions = (Map<String, dynamic>, bool);
-typedef JsonObject = Map<String, dynamic>;
+typedef BaseModelFactory = BaseModel Function([Map<String, dynamic>?]);
 
-class BaseModel {
-  final String schemaKey;
-  final ModelFacade model;
-  final RouteFacade route;
+typedef RelationFactory =
+    Relation Function({
+      required Map<String, dynamic> meta,
+      required BaseModel Function([Map<String, dynamic>?]) modelBuilder,
+      required BaseModel parent,
+      dynamic items,
+    });
 
-  final PropertyBag _attributes;
-  final _changedKeys = <String>[];
-  var _original = <String, dynamic>{};
+class ModelSaveOptions {
+  final Map<String, dynamic> additionalPayload;
+  final bool sendsOnlyModifiedFields;
+
+  const ModelSaveOptions({
+    this.additionalPayload = const {},
+    this.sendsOnlyModifiedFields = true,
+  });
+}
+
+abstract class BaseModel extends ChangeNotifier {
+  late PropertyBag _attributes;
+  Map<String, dynamic> _original = {};
+  final Map<String, Relation> _relations = {};
+
+  BaseModel([Map<String, dynamic>? attributes]) {
+    _attributes = PropertyBag.fromMap(map: {});
+    makeRelations();
+    _makeAttributes(attributes ?? {});
+  }
+
+  final config = getIt.get<PropertyBag>();
+  final route = getIt.get<RouteService>();
+
+  String get type;
+  String get schemaName;
+  String get primaryKey;
+  Map<String, dynamic> get schema;
+  Map<String, String> get attributeTypes;
+  void makeRelations();
 
   bool exists = false;
   bool wasRecentlyCreated = false;
+  final List<String> _changedKeys = [];
 
-  BaseModel({
-    required this.model,
-    required this.route,
-    required this.schemaKey,
-    Map<String, dynamic> attributes = const {},
-  }) : _attributes = PropertyBag.fromMap(map: {}) {
-    _makeAttributes(attributes);
-  }
+  _updateChangedKeys(String key) {
+    // update nested keys accordingly
+    final keyToStore = (key.contains('.') || key.contains('['))
+        ? key.split(RegExp(r'[.\[]'))[0]
+        : key;
 
-  _cast(dynamic value, String cast) {
-    if (value == null || cast.isEmpty) return value;
-
-    switch (cast) {
-      case 'boolean' || 'bool' when value is String:
-        return bool.parse(value);
-      case 'date' || 'datetime' || 'immutable_date' || 'immutable_datetime'
-          when value is String:
-        return DateTime.parse(value);
-      case 'float' || 'double' when value is String:
-        return double.parse(value);
-      case 'integer' || 'int' when value is String:
-        return int.parse(value);
-      default:
-        return value;
+    if (!_changedKeys.contains(keyToStore) &&
+        _original[keyToStore] == _attributes.get(keyToStore)) {
+      _changedKeys.add(keyToStore);
+    } else if (_changedKeys.contains(keyToStore) &&
+        _original[keyToStore] == _attributes.get(keyToStore)) {
+      _changedKeys.remove(keyToStore);
     }
   }
 
-  _mutate(dynamic value, String mutator) {
-    if (value == null || mutator.isEmpty) {
-      return value;
-    }
-
-    switch (mutator) {
-      case 'boolean' || 'bool':
-        return value is bool ? value : value == 'true';
-      case 'date' || 'datetime' || 'immutable_date' || 'immutable_datetime':
-        return value is DateTime ? value.toIso8601String() : value;
-      case 'float' || 'double':
-        return value is double ? value : double.parse(value);
-      case 'integer' || 'int':
-        return value is int ? value : int.parse(value);
-      default:
-        return value;
-    }
+  Map<String, dynamic> get attributes {
+    return _attributes.all();
   }
 
-  _makeAttributes(Map<String, dynamic> attributes) {
-    final {'relations': relations as Map<String, dynamic>} =
-        model.schemaAttributes(schemaKey);
+  Map<String, dynamic> get original {
+    return _original;
+  }
+
+  Map<String, Relation> get relations => _relations;
+
+  List<String> get fillable {
+    return schema['fillable'];
+  }
+
+  BelongsTo belongsTo({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = BelongsTo(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as BelongsTo;
+  }
+
+  BelongsToMany belongsToMany({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = BelongsToMany(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as BelongsToMany;
+  }
+
+  HasMany hasMany({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = HasMany(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as HasMany;
+  }
+
+  HasOneOrMany hasOneOrMany({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = HasOneOrMany(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as HasOneOrMany;
+  }
+
+  HasOne hasOne({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = HasOne(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as HasOne;
+  }
+
+  MorphMany morphMany({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = MorphMany(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as MorphMany;
+  }
+
+  MorphOneOrMany morphOneOrMany({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = MorphOneOrMany(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as MorphOneOrMany;
+  }
+
+  MorphOne morphOne({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = MorphOne(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as MorphOne;
+  }
+
+  MorphToMany morphToMany({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = MorphToMany(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as MorphToMany;
+  }
+
+  MorphTo morphTo({
+    required String relation,
+    required Map<String, dynamic> meta,
+    required BaseModelFactory modelBuilder,
+    required BaseModel parent,
+    dynamic items,
+  }) {
+    if (relations[relation] == null) {
+      relations[relation] = MorphTo(
+        meta: meta,
+        modelBuilder: modelBuilder,
+        parent: parent,
+        route: route,
+        items: items,
+      );
+    }
+    return relations[relation] as MorphTo;
+  }
+
+  Map<String, dynamic> _makePrimaryKeyReplacer() {
+    return {primaryKey: getKey()};
+  }
+
+  void _makeAttributes(Map<String, dynamic> attributes) {
+    final relations = schema['relations'] as Map<String, dynamic>?;
 
     // remove relations from attributes
-    final excludedKeys = relations.keys.toList();
-    final newAttributes =
-        attributes.filter((entry) => excludedKeys.contains(entry.key));
+    relations?.keys ?? [];
+    final excludedKeys = relations?.keys ?? [];
+    final newAttributes = {...attributes}
+      ..removeWhere(((key, value) => excludedKeys.contains(key)));
 
     // fill missing fillable attributes with null
-    fillable.where((key) => !newAttributes.containsKey(key)).forEach((key) {
-      newAttributes[key] = null;
-    });
+    fillable
+        .where((key) => !newAttributes.containsKey(key))
+        .forEach((key) => newAttributes[key] = null);
 
-    if (!_validateJsonObject(newAttributes)) {
-      print('Invalid attributes for model "$schemaKey" after mutation.');
+    if (relations != null) {
+      for (var key in relations.keys) {
+        // TODO: check this later
+        relation(key.camelCase())?.make(attributes[key]);
+      }
     }
+
+    // TODO: validate attributes
 
     _attributes.set('.', newAttributes);
     _original = newAttributes;
     _changedKeys.clear();
   }
 
-  Map<String, dynamic> _makePrimaryKeyReplacer() => {
-        getKeyName(): getKey(),
-      };
+  Builder query();
 
-  void _updateChangedKeys(String key) {
-    bool determineValueEquality(dynamic a, dynamic b) {
-      if (a is Map) {
-        return DeepCollectionEquality().equals(a, b);
-      }
+  dynamic getKey() => getAttribute(primaryKey);
 
-      return a == b;
-    }
-
-    // Accessing values using cascade operator and null-aware operators for safety
-    var originalValue = _original[key];
-    var currentValue = _attributes.get(key);
-
-    if (!_changedKeys.contains(key) &&
-        !determineValueEquality(originalValue, currentValue)) {
-      _changedKeys.add(key);
-    } else if (_changedKeys.contains(key) &&
-        determineValueEquality(originalValue, currentValue)) {
-      _changedKeys.remove(key);
-    }
-  }
-
-  bool _validateJsonObject(Map<String, dynamic> json) {
-    return json.entries.every((entry) {
-      final value = entry.value;
-      return ['bool', 'int', 'double', 'String']
-              .contains(value.runtimeType.toString()) ||
-          value == null ||
-          _validateJsonObject(value) ||
-          (value is List && value.every((item) => _validateJsonObject(item)));
-    });
-  }
-
-  Map<String, dynamic> get attributes => _attributes.all();
-
-  Map<String, dynamic> get original => _original;
-
-  List<String> get fillable {
-    return model.schemaAttributes(schemaKey)['fillable'];
-  }
-
-  get primaryKey {
-    return model.schemaAttributes(schemaKey)['primaryKey'];
-  }
-
-  bool get timestamps {
-    return model.schemaAttributes(schemaKey)['timestamps'];
-  }
-
-  Map<String, dynamic> get casts => {
-        ...model.schemaAttributes(schemaKey)['casts'],
-        ...timestamps
-            ? {'created_at': 'datetime', 'updated_at': 'datetime'}
-            : {},
-        // ...this.softDeletes ? { deleted_at: 'datetime' } : {},
-      };
-
-  bool get isDirty => _changedKeys.isNotEmpty;
-
-  dynamic getAttribute(String key) {
-    var value = _attributes.get(key, null);
-    if (casts.containsKey(key)) {}
-    value = _cast(value, casts[key]);
-    // final reducer = 'model${schemaKey.capitalize().camelCase()}Get${key.capitalize().camelCase()}Attribute';
-    // :TODO call !Reducer `model${ClassName}Get${Key}Attribute`
-    return value;
-  }
-
-  void setAttribute(String key, dynamic value) {
-    // final reducer = 'model${schemaKey.capitalize().camelCase()}Set${key.capitalize().camelCase()}Attribute';
-    // :TODO !Reducer `model${ClassName}Set${Key}Attribute`
-    final mutated = _mutate(value, casts[key]);
-
-    if (!_validateJsonObject({key: mutated})) {
-      print('Invalid attributes for model "$schemaKey" after mutation.');
-      return;
-    }
-
-    _attributes.set(key, mutated);
-
-    _updateChangedKeys(key);
-  }
-
-  dynamic getKey() {
-    return getAttribute(primaryKey);
-  }
-
-  String getKeyName() => primaryKey;
-
-  void fill(Map<String, dynamic> attributes) {
-    final validAttributes =
-        attributes.filterKeys((key) => fillable.contains(key));
-
-    final mutatedAttributes = Map.fromEntries(
-      validAttributes.entries.map((entry) {
-        final key = entry.key;
-        final value = entry.value;
-
-        // Assuming 'mutate' and 'casts' are available in the current Dart context
-        final mutatedValue = _mutate(value, casts[key]);
-
-        return MapEntry(key, mutatedValue);
-      }),
-    );
-
-    if (!_validateJsonObject(mutatedAttributes)) {
-      print('Invalid attributes for model "$schemaKey" after mutation.');
-      return;
-    }
-
-    _attributes.merge('.', mutatedAttributes);
-  }
-
-  Map<String, dynamic> toJson() {
-    // !Reducer `model${ClassName}Json`
-    return {
-      ...attributes,
-    };
-  }
+  // diff(): JsonObject {
+  //     return this._changedKeys.reduce((acc, key) => {
+  //         acc[key] = this._attributes.get(key) as JsonValue;
+  //         return acc;
+  //     }, {} as JsonObject);
+  // }
 
   Map<String, dynamic> diff() {
     return _changedKeys.fold<Map<String, dynamic>>({}, (acc, key) {
-      acc[key] = _attributes[key];
+      acc[key] = _attributes.get(key);
       return acc;
     });
-  }
-
-  String getType() {
-    return schemaKey;
   }
 
   RouteGenerator getRouteForSave() {
     return exists
         ? RouteGenerator(
-            name: 'luminix.$schemaKey.update',
+            name: 'luminix.$schemaName.update',
             replacer: _makePrimaryKeyReplacer(),
           )
-        : RouteGenerator(name: 'luminix.$schemaKey.store');
+        : RouteGenerator(name: 'luminix.$schemaName.store');
   }
 
   RouteGenerator getRouteForUpdate() {
     return RouteGenerator(
-      name: 'luminix.$schemaKey.update',
+      name: 'luminix.$schemaName.update',
       replacer: _makePrimaryKeyReplacer(),
     );
   }
 
-  RouteGenerator getRouteForDelete() => RouteGenerator(
-        name: 'luminix.$schemaKey.destroy',
-        replacer: _makePrimaryKeyReplacer(),
-      );
-
-  RouteGenerator getRouteForRestore() => RouteGenerator(
-        name: 'luminix.$schemaKey.restore',
-        replacer: _makePrimaryKeyReplacer(),
-      );
-
-  RouteGenerator getRouteForForceDelete() => RouteGenerator(
-        name: 'luminix.$schemaKey.forceDelete',
-        replacer: _makePrimaryKeyReplacer(),
-      );
-
-  RouteGenerator getRouteForRefresh() => RouteGenerator(
-        name: 'luminix.$schemaKey.show',
-        replacer: _makePrimaryKeyReplacer(),
-      );
-
-  String getLabel() {
-    final {'labeledBy': key} = model.schemaAttributes(schemaKey);
-
-    return getAttribute(key);
+  RouteGenerator getRouteForDelete() {
+    return RouteGenerator(
+      name: 'luminix.$schemaName.destroy',
+      replacer: _makePrimaryKeyReplacer(),
+    );
   }
 
-  Future<void> refresh() async {
+  RouteGenerator getRouteForRefresh() {
+    return RouteGenerator(
+      name: 'luminix.$schemaName.show',
+      replacer: _makePrimaryKeyReplacer(),
+    );
+  }
+
+  Relation? relation(String name) {
+    if (name != name.camelCase()) {
+      return null;
+    }
+    return relations[name.snakeCase()];
+  }
+
+  void refresh([Client Function(Client)? tap]) async {
     if (!exists) {
       throw Exception('Model not persisted');
     }
     final response = await route.call(
-        generator: getRouteForRefresh(), config: RouteCallConfig());
+      generator: getRouteForRefresh(),
+      tap: tap,
+    );
 
-    _makeAttributes(response.data);
+    _makeAttributes(response.json());
   }
 
-  Future<Response?> save([ModelSaveOptions options = (const {}, true)]) async {
+  Future<Response?> save({
+    ModelSaveOptions options = const ModelSaveOptions(),
+    Client Function(Client)? tap,
+  }) async {
     try {
-      final (
-        additionalPayload,
-        sendsOnlyModifiedFields,
-      ) = options;
-
       final existedBeforeSaving = exists;
 
-      final data = {
-        ...(sendsOnlyModifiedFields && existedBeforeSaving
-                ? diff()
-                : attributes)
-            .filterKeys((key) => fillable.contains(key)),
-        ...additionalPayload,
-      };
+      final data =
+          (options.sendsOnlyModifiedFields && existedBeforeSaving
+                  ? diff()
+                  : attributes)
+              .filterKeys((attr) => fillable.contains(attr));
 
       if (data.isEmpty) {
-        return Future.value();
+        return null;
       }
 
       final response = await route.call(
         generator: getRouteForSave(),
-        config: RouteCallConfig(
-          data: data,
-        ),
+        tap: (client) {
+          if (tap != null) {
+            return tap(client.copyWith(data: data));
+          }
+          return client.copyWith(data: data);
+        },
       );
 
-      if ([200, 201].contains(response.statusCode)) {
-        _makeAttributes(response.data);
+      if (response.successful()) {
+        _makeAttributes(response.json());
         exists = true;
         if (!existedBeforeSaving) {
           wasRecentlyCreated = true;
+          print('dispatchCreateEvent: UPDATE MODEL $schemaName');
+        } else {
+          print('dispatchUpdateEvent: UPDATE MODEL $schemaName');
         }
 
         return response;
       }
 
       throw response;
-    } catch (error) {
+    } catch (err) {
+      print(err);
       rethrow;
     }
   }
 
   Future<Response> push() async {
-    throw Exception('Method not implemented');
+    throw UnimplementedError();
   }
 
   Future<Response> delete() async {
     try {
-      final response = await route.call(
-        generator: getRouteForDelete(),
-        config: RouteCallConfig(),
-      );
+      final response = await route.call(generator: getRouteForDelete());
 
-      if (response.statusCode == 204) {
+      if (response.noContent()) {
         return response;
       }
 
       throw response;
-    } catch (error) {
+    } catch (err) {
+      print(err);
       rethrow;
     }
   }
 
-  Future<void> update(JsonObject data) async {
+  Future<void> update(
+    Map<String, dynamic> data, [
+    Client Function(Client)? tap,
+  ]) async {
     try {
       final response = await route.call(
         generator: getRouteForUpdate(),
-        config: RouteCallConfig(data: data),
+        tap: (client) {
+          if (tap != null) {
+            return tap(client.copyWith(data: data));
+          }
+          return client.copyWith(data: data);
+        },
       );
 
-      if (response.statusCode == 200) {
-        _makeAttributes(response.data);
+      if (response.ok()) {
+        _makeAttributes(response.json());
         return;
       }
 
       throw response;
-    } catch (error) {
+    } catch (err) {
+      print(err);
       rethrow;
     }
   }
@@ -365,17 +467,17 @@ class BaseModel {
   Future<Response> forceDelete() async {
     try {
       final response = await route.call(
-        generator: getRouteForForceDelete(),
-        // TODO: { params: { force: true } }
-        config: RouteCallConfig(),
+        generator: getRouteForDelete(),
+        tap: (client) => client.copyWith(params: {'force': true}),
       );
 
-      if (response.statusCode == 204) {
+      if (response.noContent()) {
         return response;
       }
 
       throw response;
-    } catch (error) {
+    } catch (err) {
+      print(err);
       rethrow;
     }
   }
@@ -383,177 +485,68 @@ class BaseModel {
   Future<Response> restore() async {
     try {
       final response = await route.call(
-        generator: getRouteForRestore(),
-        // TODO: { params: { restore: true } }
-        config: RouteCallConfig(),
+        generator: getRouteForUpdate(),
+        tap: (client) => client.copyWith(params: {'restore': true}),
       );
 
-      if (response.statusCode == 200) {
+      if (response.ok()) {
         return response;
       }
 
       throw response;
-    } catch (error) {
+    } catch (err) {
+      print(err);
       rethrow;
     }
   }
 
-  // static String getSchemaName() {
-  //   return schemaKey;
-  // }
+  get isDirty {
+    return _changedKeys.isNotEmpty;
+  }
 
-  // static Map<String, dynamic> getSchema() {
-  //   return model.schema(schemaKey);
-  // }
+  dynamic getAttribute(String key) {
+    _attributes[key];
 
-  // Builder query() {
-  //   return Builder(schemaKey: schemaKey, route: route);
-  // }
+    if (attributeTypes[key] != null) {
+      if (attributeTypes[key] == 'double' && _attributes[key] is String) {
+        return double.tryParse(_attributes[key] as String);
+      }
+      return switch (attributeTypes[key]) {
+        'DateTime' =>
+          _attributes[key] != null
+              ? DateTime.parse(_attributes[key] as String)
+              : null,
+        'int' => _attributes[key],
+        'bool' => _attributes[key] == true || _attributes[key] == 1,
+        _ => _attributes[key],
+      };
+    }
 
-  // Builder where(
-  //     {required String key, required dynamic value, Filter? filterOperator}) {
-  //   return query().where(
-  //     key: key,
-  //     value: value,
-  //     filterOperator: filterOperator,
-  //   );
-  // }
+    return _attributes[key];
+  }
 
-  // Builder whereNull(String key) {
-  //   return query().whereNull(key);
-  // }
+  void setAttribute(String key, dynamic value) {
+    final oldValue = _attributes.get(key);
 
-  // whereNotNull(String key) {
-  //   return query().whereNotNull(key);
-  // }
+    // convert value according to attribute types before comparison
+    if (value != null) {
+      if (attributeTypes[key] != null) {
+        value = switch (attributeTypes[key]) {
+          'DateTime' => value.toString(),
+          _ => value,
+        };
+      }
+    }
 
-  // Builder whereBetween<T>(String key, (T, T) value) {
-  //   return query().whereBetween(key, value);
-  // }
+    // if unchanged, do nothing
+    if (oldValue == value) {
+      return;
+    }
 
-  // Builder whereNotBetween<T>(String key, (T, T) value) {
-  //   return query().whereNotBetween(key, value);
-  // }
+    _attributes.set(key, value);
 
-  // Builder orderBy(String key, [SortDirection direction = SortDirection.asc]) {
-  //   return query().orderBy(key, direction);
-  // }
+    _updateChangedKeys(key);
 
-  // Builder searchBy(String term) {
-  //   return query().searchBy(term);
-  // }
-
-  // Builder minified() {
-  //   return query().minified();
-  // }
-
-  // Builder limit(int value) {
-  //   return query().limit(value);
-  // }
-
-  // Future get([int page = 1, String? replaceLinksWith]) {
-  //   return query().get(page, replaceLinksWith);
-  // }
-
-  // Future find(dynamic id) {
-  //   return query().find(id);
-  // }
-
-  // Future first() {
-  //   return query().first();
-  // }
-
-  // static create(JsonObject attributes) async {
-  //   final model = BaseModel(
-  //     model: this.model,
-  //     route: route,
-  //     schemaKey: schemaKey,
-  //   );
-
-  //   model.fill(attributes);
-
-  //   await model.save();
-
-  //   return model;
-  // }
-
-  // static update(dynamic id, JsonObject attributes) async {
-  //   final model = BaseModel(
-  //     model: this.model,
-  //     route: route,
-  //     schemaKey: schemaKey,
-  //     attributes: {'id': id},
-  //   );
-
-  //   model.fill(attributes);
-  //   model.exists = true;
-
-  //   await model.save();
-
-  //   return model;
-  // }
-
-  // static delete(dynamic id) {
-  //   if (id is List) {
-  //     return route.call(
-  //       generator: RouteGenerator(name: 'luminix.$schemaKey.destroyMany'),
-  //       // TODO: { params: { ids: id } }
-  //       config: RouteCallConfig(),
-  //     );
-  //   }
-
-  //   final model = BaseModel(
-  //     model: this.model,
-  //     route: route,
-  //     schemaKey: schemaKey,
-  //     attributes: {'id': id},
-  //   );
-
-  //   return model.delete();
-  // }
-
-  // static restore(dynamic id) {
-  //   if (id is List) {
-  //     return route.call(
-  //       generator: RouteGenerator(name: 'luminix.$schemaKey.restoreMany'),
-  //       config: RouteCallConfig(data: {'ids': id}),
-  //     );
-  //   }
-
-  //   final model = BaseModel(
-  //     model: this.model,
-  //     route: route,
-  //     schemaKey: schemaKey,
-  //     attributes: {'id': id},
-  //   );
-
-  //   return model.restore();
-  // }
-
-  // static forceDelete(dynamic id) {
-  //   if (id is List) {
-  //     return route.call(
-  //       generator: RouteGenerator(name: 'luminix.$schemaKey.destroyMany'),
-  //       // TODO: { params: { ids: id, force: true } }
-  //       config: RouteCallConfig(),
-  //     );
-  //   }
-
-  //   final model = BaseModel(
-  //     model: model,
-  //     route: route,
-  //     schemaKey: schemaKey,
-  //     attributes: {'id': id},
-  //   );
-
-  //   return model.forceDelete();
-  // }
-
-  // static singular() {
-  //   return model.schema(schemaKey)['displayName']['singular'];
-  // }
-
-  // static plural() {
-  //   return model.schema(schemaKey)['displayName']['plural'];
-  // }
+    notifyListeners();
+  }
 }
